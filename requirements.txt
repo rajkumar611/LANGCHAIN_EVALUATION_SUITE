@@ -1,0 +1,26 @@
+# ── Web / API ──────────────────────────────────────────────────────────────────
+fastapi
+uvicorn[standard]
+python-multipart
+python-dotenv
+
+# ── Anthropic ──────────────────────────────────────────────────────────────────
+anthropic
+
+# ── LangChain ─────────────────────────────────────────────────────────────────
+langchain
+langchain-anthropic
+langchain-community
+langchain-core
+langchain-text-splitters
+langgraph
+
+# ── Vector search & embeddings ────────────────────────────────────────────────
+faiss-cpu
+sentence-transformers
+scikit-learn
+
+# ── Utilities ─────────────────────────────────────────────────────────────────
+numpy
+networkx
+pypdf
