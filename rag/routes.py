@@ -2,6 +2,7 @@ import io, json, re
 import numpy as np
 import networkx as nx
 from fastapi import APIRouter, UploadFile, File
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import anthropic
 from sentence_transformers import SentenceTransformer
@@ -75,11 +76,14 @@ def rrf(lists: list[list[dict]], k: int = 60) -> list[dict]:
     return [{"id": i, "text": DOCS[i], "score": round(scores[i], 6)} for i in order]
 
 def llm(prompt: str, max_tokens: int = 512) -> str:
-    r = client.messages.create(
-        model=CLAUDE, max_tokens=max_tokens,
-        messages=[{"role": "user", "content": prompt}],
-    )
-    return r.content[0].text.strip()
+    try:
+        r = client.messages.create(
+            model=CLAUDE, max_tokens=max_tokens,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return r.content[0].text.strip()
+    except anthropic.APIError as e:
+        raise RuntimeError(f"Anthropic API error: {e}") from e
 
 def no_docs_response():
     return {"answer": "No document uploaded yet. Please upload a PDF or TXT file first.",
@@ -136,39 +140,41 @@ def naive_rag(q: Q):
 def advanced_rag(q: Q):
     if not DOCS: return no_docs_response()
     steps = []
-
-    rewritten = llm(
-        f"Rewrite this query to be specific and retrieval-optimized. "
-        f"Return ONLY the rewritten query.\n\nOriginal: {q.query}", max_tokens=128
-    )
-    steps.append({"step": "1. Query Rewriting", "detail": f'"{q.query}" → "{rewritten}"'})
-
-    vr = vsearch(rewritten, k=5)
-    br = bsearch(rewritten, k=5)
-    steps.append({"step": "2. Hybrid Search",   "detail": "Dense vector + sparse BM25 in parallel"})
-
-    fused = rrf([vr, br])[:5]
-    steps.append({"step": "3. RRF Fusion",       "detail": "Reciprocal Rank Fusion: score = Σ 1/(rank+60)"})
-
-    passages = "\n".join(f"ID {d['id']}: {d['text']}" for d in fused)
-    raw = llm(
-        f"Score each passage for relevance to '{q.query}' (0-10). "
-        f"Return JSON array [{{\"id\": N, \"score\": X}}]. JSON only.\n\n{passages}",
-        max_tokens=256,
-    )
     try:
-        m = re.search(r'\[.*?\]', raw, re.DOTALL)
-        if m:
-            id2sc = {r["id"]: r["score"] for r in json.loads(m.group())}
-            fused.sort(key=lambda d: id2sc.get(d["id"], 0), reverse=True)
-    except Exception:
-        pass
-    steps.append({"step": "4. LLM Re-ranking",  "detail": "LLM scores each candidate — precision over recall"})
+        rewritten = llm(
+            f"Rewrite this query to be specific and retrieval-optimized. "
+            f"Return ONLY the rewritten query.\n\nOriginal: {q.query}", max_tokens=128
+        )
+        steps.append({"step": "1. Query Rewriting", "detail": f'"{q.query}" → "{rewritten}"'})
 
-    docs = fused[:3]
-    ans  = llm(ctx_prompt(docs, q.query))
-    steps.append({"step": "5. Generate",         "detail": "Answer from rewritten query + re-ranked context"})
-    return {"answer": ans, "docs": docs, "steps": steps, "rewritten_query": rewritten}
+        vr = vsearch(rewritten, k=5)
+        br = bsearch(rewritten, k=5)
+        steps.append({"step": "2. Hybrid Search",   "detail": "Dense vector + sparse BM25 in parallel"})
+
+        fused = rrf([vr, br])[:5]
+        steps.append({"step": "3. RRF Fusion",       "detail": "Reciprocal Rank Fusion: score = Σ 1/(rank+60)"})
+
+        passages = "\n".join(f"ID {d['id']}: {d['text']}" for d in fused)
+        raw = llm(
+            f"Score each passage for relevance to '{q.query}' (0-10). "
+            f"Return JSON array [{{\"id\": N, \"score\": X}}]. JSON only.\n\n{passages}",
+            max_tokens=256,
+        )
+        try:
+            m = re.search(r'\[.*?\]', raw, re.DOTALL)
+            if m:
+                id2sc = {r["id"]: r["score"] for r in json.loads(m.group())}
+                fused.sort(key=lambda d: id2sc.get(d["id"], 0), reverse=True)
+        except Exception:
+            pass
+        steps.append({"step": "4. LLM Re-ranking",  "detail": "LLM scores each candidate — precision over recall"})
+
+        docs = fused[:3]
+        ans  = llm(ctx_prompt(docs, q.query))
+        steps.append({"step": "5. Generate",         "detail": "Answer from rewritten query + re-ranked context"})
+        return {"answer": ans, "docs": docs, "steps": steps, "rewritten_query": rewritten}
+    except RuntimeError as e:
+        return JSONResponse(status_code=500, content={"detail": str(e)})
 
 
 # ════════════════════════════════════════════════════════════════════════════════
@@ -176,7 +182,7 @@ def advanced_rag(q: Q):
 # ════════════════════════════════════════════════════════════════════════════════
 TOOLS = [{
     "name": "search_knowledge_base",
-    "description": "Search the knowledge base. Call multiple times with different queries if needed.",
+    "description": "Search the knowledge base for relevant context. Search once or twice, then synthesize a final answer.",
     "input_schema": {
         "type": "object",
         "properties": {
@@ -187,43 +193,55 @@ TOOLS = [{
     },
 }]
 
+AGENT_SYSTEM = (
+    "You are a helpful assistant with access to a knowledge base search tool. "
+    "Search 1-2 times to gather relevant context, then provide a clear, concise answer. "
+    "Do not search more than twice. After searching, always end with a final answer."
+)
+
 @router.post("/rag/agentic")
 def agentic_rag(q: Q):
     if not DOCS: return no_docs_response()
     steps        = [{"step": "0. Init Agent", "detail": f'Agent receives task: "{q.query}"'}]
     all_docs: list[dict] = []
-    messages     = [{"role": "user", "content":
-        f"Answer this question by searching the knowledge base. "
-        f"Search multiple times with different queries if needed.\n\nQuestion: {q.query}"}]
+    messages     = [{"role": "user", "content": f"Question: {q.query}"}]
     final_answer = ""
 
-    for turn in range(5):
-        resp      = client.messages.create(model=CLAUDE, max_tokens=512, tools=TOOLS, messages=messages)
-        texts     = [b.text for b in resp.content if hasattr(b, "text") and b.text]
-        tool_uses = [b for b in resp.content if b.type == "tool_use"]
+    MAX_SEARCH_ROUNDS = 2
+    try:
+        for turn in range(MAX_SEARCH_ROUNDS):
+            resp      = client.messages.create(model=CLAUDE, max_tokens=2048, system=AGENT_SYSTEM, tools=TOOLS, messages=messages)
+            texts     = [b.text for b in resp.content if hasattr(b, "text") and b.text]
+            tool_uses = [b for b in resp.content if b.type == "tool_use"]
 
-        if resp.stop_reason == "end_turn" or not tool_uses:
-            final_answer = texts[0] if texts else "No answer generated."
-            steps.append({"step": f"{turn+1}. Done", "detail": "Agent satisfied — returning final answer"})
-            break
+            if resp.stop_reason in ("end_turn", "max_tokens") or not tool_uses:
+                final_answer = texts[0] if texts else "No answer generated."
+                steps.append({"step": f"{turn+1}. Done", "detail": "Agent answered directly"})
+                break
 
-        messages.append({"role": "assistant", "content": resp.content})
+            messages.append({"role": "assistant", "content": resp.content})
 
-        tool_results = []
-        for tu in tool_uses:
-            sq      = tu.input.get("query", q.query)
-            tk      = min(int(tu.input.get("top_k", 3)), 5)
-            results = vsearch(sq, k=tk)
-            all_docs.extend(results)
-            steps.append({"step": f"{turn+1}. Tool Call",
-                          "detail": f'search_knowledge_base(query="{sq}", top_k={tk}) → {len(results)} hits'})
-            tool_results.append({
-                "type": "tool_result", "tool_use_id": tu.id,
-                "content": json.dumps([{"id": r["id"], "text": r["text"]} for r in results]),
-            })
-        messages.append({"role": "user", "content": tool_results})
-    else:
-        final_answer = "Max iterations reached."
+            tool_results = []
+            for tu in tool_uses:
+                sq      = tu.input.get("query", q.query)
+                tk      = min(int(tu.input.get("top_k", 3)), 5)
+                results = vsearch(sq, k=tk)
+                all_docs.extend(results)
+                steps.append({"step": f"{turn+1}. Tool Call",
+                              "detail": f'search_knowledge_base(query="{sq}", top_k={tk}) → {len(results)} hits'})
+                tool_results.append({
+                    "type": "tool_result", "tool_use_id": tu.id,
+                    "content": json.dumps([{"id": r["id"], "text": r["text"]} for r in results]),
+                })
+            messages.append({"role": "user", "content": tool_results})
+        else:
+            # Force a final answer without tools so the model must respond in text
+            messages.append({"role": "user", "content": "Now provide your final answer based on the search results above."})
+            forced = client.messages.create(model=CLAUDE, max_tokens=2048, system=AGENT_SYSTEM, messages=messages)
+            final_answer = forced.content[0].text.strip() if forced.content else "No answer generated."
+            steps.append({"step": "Final. Forced Answer", "detail": "Agent prompted to synthesize after max search rounds"})
+    except anthropic.APIError as e:
+        return JSONResponse(status_code=500, content={"detail": f"Anthropic API error: {e}"})
 
     seen: set[int] = set()
     unique = [d for d in all_docs if not (d["id"] in seen or seen.add(d["id"]))]  # type: ignore
