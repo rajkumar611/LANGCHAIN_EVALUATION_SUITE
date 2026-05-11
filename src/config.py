@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     max_search_rounds: int = 2   # agentic RAG: max tool-call iterations
 
     # ── Server ────────────────────────────────────────────────────────────────
-    port: int = 8000
+    port: int = 8080
     env:  str = "development"    # set to "production" to disable reload
 
     # ── LangSmith (optional) ──────────────────────────────────────────────────

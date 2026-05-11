@@ -361,7 +361,7 @@ def agentic_rag(q: QueryRequest):
 # ════════════════════════════════════════════════════════════════════════════════
 @router.post("/rag/hybrid")
 def hybrid_rag(q: QueryRequest):
-    """Hybrid RAG: dense (FAISS cosine) + sparse (TF-IDF BM25) fused via RRF.
+    """Hybrid RAG: dense (cosine similarity via NumPy) + sparse (TF-IDF BM25) fused via RRF.
 
     Runs both retrieval methods in parallel and fuses results, then annotates
     each returned chunk with which retrieval method(s) found it.
