@@ -1,0 +1,42 @@
+[project]
+name = "rag-evaluation-suite"
+version = "1.0.0"
+description = "FastAPI demo of 5 RAG strategies, 10 LangChain patterns, and LLM-as-Judge evaluation"
+requires-python = ">=3.11"
+
+# ── pytest ────────────────────────────────────────────────────────────────────
+[tool.pytest.ini_options]
+testpaths     = ["tests"]
+asyncio_mode  = "strict"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::UserWarning",
+]
+
+# ── ruff (linter + formatter) ─────────────────────────────────────────────────
+[tool.ruff]
+target-version = "py311"
+line-length    = 100
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "I",    # isort
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "SIM",  # flake8-simplify
+]
+ignore = [
+    "E501",   # line too long — handled by formatter
+    "B008",   # do not perform function calls in default arguments (FastAPI pattern)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]
+
+# ── mypy ──────────────────────────────────────────────────────────────────────
+[tool.mypy]
+python_version         = "3.11"
+ignore_missing_imports = true
+warn_unused_ignores    = true

@@ -13,24 +13,60 @@ pip install -r requirements.txt   # first time only (downloads ~80 MB embedding 
 python main.py                    # serves on http://localhost:8000
 ```
 
-`main.py` loads `.env` then delegates to `uvicorn app:app`. The `.env` must contain `ANTHROPIC_API_KEY`.
+`main.py` loads `.env`, validates `ANTHROPIC_API_KEY` is set (exits with a clear message if not), then starts uvicorn. `reload` is enabled only when `ENV=development` (the default).
 
 Optional: add `LANGCHAIN_API_KEY` to `.env` to enable LangSmith tracing automatically.
+
+### Docker
+
+```bash
+docker compose up          # reads .env, sets ENV=production, healthchecks /health
+```
+
+### Tests
+
+```bash
+python -m pytest tests/ -v     # 35 tests, all LLM calls mocked, no API key needed
+```
 
 ## Architecture
 
 ```
-app.py                                  ← FastAPI app; mounts routers; serves frontend/index.html at /
-main.py                                 ← uvicorn entrypoint
-frontend/
-  index.html                            ← entire SPA (single file)
+app.py                                  ← FastAPI app; mounts routers; /health; logging setup
+main.py                                 ← uvicorn entrypoint; startup validation
 src/
+  config.py                             ← Pydantic BaseSettings — single source of truth for all env vars
   rag/
     routes.py                           ← 5 RAG strategies + /upload + /rag/evaluate
   langchain_orchestration/
     routes.py                           ← 10 LangChain concept demos
-tests/                                  ← test suite (empty, ready to populate)
+frontend/
+  index.html                            ← entire SPA (single file)
+tests/
+  conftest.py                           ← shared fixtures: client, sample_text, uploaded_client
+  test_rag_utils.py                     ← 16 unit tests for chunking + retrieval utilities
+  test_rag_endpoints.py                 ← 19 endpoint integration tests (LLM mocked)
+Dockerfile                              ← multi-stage build; pre-downloads embedding model
+docker-compose.yml                      ← local dev; healthcheck wired to /health
+pyproject.toml                          ← pytest, ruff, mypy config
+.github/workflows/ci.yml                ← runs tests + lint on every push/PR
 ```
+
+## Configuration (`src/config.py`)
+
+All settings are defined as a `pydantic_settings.BaseSettings` subclass and imported as `from src.config import settings`. Do **not** use `os.getenv()` directly in route files — add new settings to `config.py` instead.
+
+| Setting | Default | Description |
+|---|---|---|
+| `anthropic_api_key` | *(required)* | Anthropic API key |
+| `sonnet_model` | `claude-sonnet-4-6` | Model used by RAG module |
+| `haiku_model` | `claude-haiku-4-5-20251001` | Model used by LangChain module |
+| `embedding_model` | `all-MiniLM-L6-v2` | Sentence-transformers model |
+| `max_chunks` | `300` | Max chunks stored per upload |
+| `max_chunk_chars` | `400` | Max chars per chunk |
+| `max_search_rounds` | `2` | Max agentic RAG tool-call iterations |
+| `port` | `8000` | Server port |
+| `env` | `development` | Set to `production` to disable reload |
 
 ## RAG module (`src/rag/routes.py`)
 
@@ -42,22 +78,33 @@ Global in-memory state holds the uploaded document corpus — **reset on every s
 |---|---|
 | `POST /rag/naive` | Embed → vector search → generate |
 | `POST /rag/advanced` | Query rewrite → hybrid search → RRF → LLM re-rank → generate |
-| `POST /rag/agentic` | Tool-calling agent that searches iteratively (up to 2 rounds) |
+| `POST /rag/agentic` | Tool-calling agent that searches iteratively (up to `max_search_rounds`) |
 | `POST /rag/hybrid` | Dense (FAISS cosine) + sparse (TF-IDF BM25) fused via RRF |
 | `POST /rag/graph` | Seed retrieval + 2-hop BFS on a sequential graph → re-score |
 | `POST /rag/evaluate` | LLM-as-Judge: Faithfulness, Answer Relevancy, Context Utilization, optional Correctness |
 
-Shared utilities: `vsearch`, `bsearch`, `rrf`, `chunk_text`, `llm`, `rebuild_indexes`, `no_docs_response`, `ctx_prompt`.
+**Shared utilities** (all have docstrings):
+
+| Function | Purpose |
+|---|---|
+| `vector_search(query, k)` | Dense cosine similarity search over `DOC_EMBS` |
+| `bm25_search(query, k)` | Sparse TF-IDF keyword search over `TFIDF_MAT` |
+| `reciprocal_rank_fusion(lists, k=60)` | Fuses multiple ranked lists; k=60 is the standard RRF constant |
+| `chunk_text(text, max_chars)` | Splits text at paragraph then sentence boundaries |
+| `llm(prompt, max_tokens)` | Single-turn Claude call; raises `RuntimeError` on failure |
+| `rebuild_indexes(docs)` | Rebuilds all globals from a new doc list |
+| `no_docs_response()` | Standard response when no document is uploaded |
+| `ctx_prompt(docs, question)` | Builds the RAG context+question prompt |
+
+**Request models**: `QueryRequest` (field: `query`), `EvaluationRequest` (fields: `question`, `answer`, `contexts`, `ground_truth`).
 
 Global state: `DOCS`, `DOC_EMBS`, `TFIDF_MAT`, `G`, `embedder` (`all-MiniLM-L6-v2`, 384-dim), `tfidf`.
-
-Upload limits: max 300 chunks, max chunk size 400 chars.
 
 ## LangChain module (`src/langchain_orchestration/routes.py`)
 
 Uses **`langchain-anthropic`** (`ChatAnthropic`, model `claude-haiku-4-5-20251001`).
 
-All imports are deferred (inside each route function) — keeps startup fast.
+All LangChain imports are deferred (inside each route function) — keeps startup fast.
 
 | Endpoint | Concept |
 |---|---|
@@ -72,13 +119,32 @@ All imports are deferred (inside each route function) — keeps startup fast.
 | `POST /langchain/multiagent` | Two sequential LLM calls (researcher → blog writer) |
 | `POST /langchain/langgraph` | `StateGraph` with manager → research → writer → reviewer + conditional edge (max 2 revisions) |
 
+**Request models**: `PromptRequest`, `TextRequest`, `QuestionRequest`, `TopicRequest`, `MemoryRequest`.
+
 `LC_SESSIONS` (dict) stores per-session chat history — cleared with `DELETE /langchain/memory/{session_id}`.
+
+**Calculator tool**: Uses a whitelist-only AST walker (`_safe_eval_math`) — **no `eval()` anywhere**. Only permits `+`, `-`, `*`, `/`, `**`, and numeric literals. Input is pre-validated by regex before parsing.
+
+## Health endpoint
+
+`GET /health` — returns uptime, `len(DOCS)`, `len(LC_SESSIONS)`, and model names. No external calls. Used as the Docker healthcheck.
 
 ## Key constraints
 
 - **All state is in-memory.** Restarting the server clears uploaded docs and chat sessions.
 - RAG module uses `claude-sonnet-4-6`; LangChain module uses `claude-haiku-4-5-20251001` — don't conflate.
-- The LangChain fixed vectorstore (`_lc_vectorstore`) contains only 7 hardcoded AI/ML facts; it is not the uploaded document store.
+- The LangChain fixed vectorstore (`_lc_vectorstore`) contains only 7 hardcoded AI/ML facts; it is **not** the uploaded document store.
 - `frontend/index.html` is a single-file SPA — all JS, CSS, and HTML in one file. Edit it directly.
 - `app.py` enables CORS with wildcard (`allow_origins=["*"]`) — fine for local dev, not for production.
 - LangSmith tracing activates automatically when `LANGCHAIN_API_KEY` is set in `.env`.
+- All Pydantic request models enforce `min_length` / `max_length` constraints — do not remove these.
+- Every route endpoint wraps its body in `try/except` and returns `JSONResponse(status_code=500)` on failure — maintain this pattern when adding new endpoints.
+
+## Adding a new RAG endpoint
+
+1. Add a route function in `src/rag/routes.py` with a docstring explaining the strategy.
+2. Use `QueryRequest` as the request model (or extend it if needed).
+3. Return `no_docs_response()` if `not DOCS`.
+4. Wrap the body in `try/except RuntimeError` → `JSONResponse(500)`.
+5. Use `vector_search`, `bm25_search`, `reciprocal_rank_fusion`, `llm`, `ctx_prompt` — don't duplicate logic.
+6. Add endpoint tests to `tests/test_rag_endpoints.py` — mock `src.rag.routes.llm` with `unittest.mock.patch`.

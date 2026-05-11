@@ -1,5 +1,6 @@
 import io
 import json
+import logging
 import os
 import re
 
@@ -11,21 +12,23 @@ os.environ.setdefault("HF_HUB_DISABLE_IMPLICIT_TOKEN", "1")
 
 from fastapi import APIRouter, UploadFile, File
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import anthropic
 from sentence_transformers import SentenceTransformer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity as sk_cos
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 # ── Config ────────────────────────────────────────────────────────────────────
-CLAUDE      = os.getenv("SONNET_MODEL", "claude-sonnet-4-6")
-EMB_MODEL   = os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2")
+from src.config import settings
 
-MAX_CHUNKS      = 300
-MAX_CHUNK_CHARS = 400
-MAX_SEARCH_ROUNDS = 2   # agentic RAG: max tool-call iterations before forcing a final answer
+CLAUDE            = settings.sonnet_model
+EMB_MODEL         = settings.embedding_model
+MAX_CHUNKS        = settings.max_chunks
+MAX_CHUNK_CHARS   = settings.max_chunk_chars
+MAX_SEARCH_ROUNDS = settings.max_search_rounds
 
 # ── Clients & models ──────────────────────────────────────────────────────────
 print(f"Loading embedding model '{EMB_MODEL}' (first run downloads ~80 MB)…")
@@ -41,18 +44,23 @@ tfidf                = TfidfVectorizer(stop_words="english")
 
 
 # ── Request / response models ─────────────────────────────────────────────────
-class Q(BaseModel):
-    query: str
+class QueryRequest(BaseModel):
+    query: str = Field(..., min_length=1, max_length=2000)
 
-class EvalReq(BaseModel):
-    question:    str
-    answer:      str
-    contexts:    list[str]
-    ground_truth: str = ""
+class EvaluationRequest(BaseModel):
+    question:     str       = Field(..., min_length=1, max_length=2000)
+    answer:       str       = Field(..., min_length=1, max_length=4000)
+    contexts:     list[str] = Field(..., min_length=1, max_length=20)
+    ground_truth: str       = Field(default="", max_length=2000)
 
 
 # ── Shared utilities ──────────────────────────────────────────────────────────
-def rebuild_indexes(docs: list[str]):
+def rebuild_indexes(docs: list[str]) -> None:
+    """Rebuild FAISS embeddings, TF-IDF matrix, and sequential graph from a new doc list.
+
+    Mutates the module-level globals DOCS, DOC_EMBS, TFIDF_MAT, and G.
+    Call this after every successful upload.
+    """
     global DOCS, DOC_EMBS, TFIDF_MAT
     DOCS      = docs
     DOC_EMBS  = embedder.encode(DOCS, normalize_embeddings=True)
@@ -65,6 +73,12 @@ def rebuild_indexes(docs: list[str]):
 
 
 def chunk_text(text: str, max_chars: int = MAX_CHUNK_CHARS) -> list[str]:
+    """Split text into retrieval-sized chunks preserving paragraph and sentence boundaries.
+
+    Collapses excessive blank lines, splits on double-newlines into paragraphs,
+    then splits overlong paragraphs at sentence boundaries. Skips paragraphs
+    shorter than 40 chars (likely headers/noise). Caps at MAX_CHUNKS total.
+    """
     text  = re.sub(r'\n{3,}', '\n\n', text.strip())
     paras = [p.strip() for p in re.split(r'\n\n+', text) if len(p.strip()) > 40]
     chunks: list[str] = []
@@ -85,27 +99,31 @@ def chunk_text(text: str, max_chars: int = MAX_CHUNK_CHARS) -> list[str]:
     return chunks[:MAX_CHUNKS]
 
 
-def vsearch(query: str, k: int = 5) -> list[dict]:
+def vector_search(query: str, k: int = 5) -> list[dict]:
     """Dense vector search — cosine similarity over document embeddings."""
-    qe     = embedder.encode([query], normalize_embeddings=True)
-    scores = (qe @ DOC_EMBS.T)[0]
-    top    = np.argsort(scores)[::-1][:k]
+    query_emb = embedder.encode([query], normalize_embeddings=True)
+    scores    = (query_emb @ DOC_EMBS.T)[0]
+    top       = np.argsort(scores)[::-1][:k]
     return [{"id": int(i), "text": DOCS[i], "score": round(float(scores[i]), 4)} for i in top]
 
 
-def bsearch(query: str, k: int = 5) -> list[dict]:
+def bm25_search(query: str, k: int = 5) -> list[dict]:
     """Sparse keyword search — TF-IDF / BM25-style cosine similarity."""
-    qv     = tfidf.transform([query])
-    scores = sk_cos(qv, TFIDF_MAT)[0]
-    top    = np.argsort(scores)[::-1][:k]
+    query_vec = tfidf.transform([query])
+    scores    = sk_cos(query_vec, TFIDF_MAT)[0]
+    top       = np.argsort(scores)[::-1][:k]
     return [{"id": int(i), "text": DOCS[i], "score": round(float(scores[i]), 4)} for i in top]
 
 
-def rrf(lists: list[list[dict]], k: int = 60) -> list[dict]:
-    """Reciprocal Rank Fusion — combines multiple ranked lists into one."""
+def reciprocal_rank_fusion(ranked_lists: list[list[dict]], k: int = 60) -> list[dict]:
+    """Combine multiple ranked result lists using Reciprocal Rank Fusion.
+
+    Score formula: sum(1 / (rank + k)) across all lists. k=60 is the standard
+    constant that dampens the influence of very high rankings.
+    """
     scores: dict[int, float] = {}
-    for lst in lists:
-        for rank, item in enumerate(lst):
+    for ranked_list in ranked_lists:
+        for rank, item in enumerate(ranked_list):
             scores[item["id"]] = scores.get(item["id"], 0) + 1 / (rank + k)
     order = sorted(scores, key=scores.__getitem__, reverse=True)
     return [{"id": i, "text": DOCS[i], "score": round(scores[i], 6)} for i in order]
@@ -114,22 +132,28 @@ def rrf(lists: list[list[dict]], k: int = 60) -> list[dict]:
 def llm(prompt: str, max_tokens: int = 512) -> str:
     """Send a single-turn prompt to Claude and return the text response."""
     try:
-        r = client.messages.create(
+        response = client.messages.create(
             model=CLAUDE,
             max_tokens=max_tokens,
             messages=[{"role": "user", "content": prompt}],
         )
-        return r.content[0].text.strip()
+        return response.content[0].text.strip()
     except anthropic.APIError as e:
+        logger.error("Anthropic API error: %s", e)
         raise RuntimeError(f"Anthropic API error: {e}") from e
+    except Exception as e:
+        logger.error("Unexpected LLM error: %s", e)
+        raise RuntimeError(f"LLM call failed: {e}") from e
 
 
 def no_docs_response() -> dict:
+    """Standard response when no document has been uploaded yet."""
     return {"answer": "No document uploaded yet. Please upload a PDF or TXT file first.",
             "docs": [], "steps": []}
 
 
 def ctx_prompt(docs: list[dict], question: str) -> str:
+    """Build a RAG prompt from retrieved docs and the user question."""
     ctx = "\n".join(f"[{i+1}] {d['text']}" for i, d in enumerate(docs))
     return f"Context:\n{ctx}\n\nQuestion: {question}\n\nAnswer in 2-3 sentences:"
 
@@ -137,6 +161,7 @@ def ctx_prompt(docs: list[dict], question: str) -> str:
 # ── Upload ────────────────────────────────────────────────────────────────────
 @router.post("/upload")
 async def upload_doc(file: UploadFile = File(...)):
+    """Accept a PDF or TXT file, chunk it, and rebuild all retrieval indexes."""
     content = await file.read()
     fname   = file.filename or ""
 
@@ -146,6 +171,7 @@ async def upload_doc(file: UploadFile = File(...)):
             reader = PdfReader(io.BytesIO(content))
             text   = "\n\n".join(p.extract_text() or "" for p in reader.pages)
         except Exception as e:
+            logger.warning("PDF parse failed for '%s': %s", fname, e)
             return {"error": f"PDF error: {e}"}
     else:
         text = content.decode("utf-8", errors="ignore")
@@ -155,6 +181,7 @@ async def upload_doc(file: UploadFile = File(...)):
         return {"error": "No readable text found in file."}
 
     rebuild_indexes(chunks)
+    logger.info("Uploaded '%s': %d chunks indexed", fname, len(chunks))
     return {"filename": fname, "chunks": len(chunks)}
 
 
@@ -162,24 +189,38 @@ async def upload_doc(file: UploadFile = File(...)):
 # 1 · NAIVE RAG
 # ════════════════════════════════════════════════════════════════════════════════
 @router.post("/rag/naive")
-def naive_rag(q: Q):
+def naive_rag(q: QueryRequest):
+    """Baseline RAG: embed query → vector search → generate.
+
+    Demonstrates the simplest possible RAG pipeline: one embedding call,
+    one cosine similarity pass, one LLM generation.
+    """
     if not DOCS:
         return no_docs_response()
 
-    steps = [{"step": "1. Embed Query",     "detail": f'Encode "{q.query}" → 384-dim vector'}]
-    docs  = vsearch(q.query, k=3)
-    steps.append({"step": "2. Vector Search",  "detail": f"Cosine similarity over {len(DOCS)} docs → top 3"})
-    steps.append({"step": "3. Augment Prompt", "detail": "Prepend top-3 chunks to the user question"})
-    ans = llm(ctx_prompt(docs, q.query))
-    steps.append({"step": "4. Generate", "detail": "LLM reads augmented prompt → answer"})
-    return {"answer": ans, "docs": docs, "steps": steps}
+    try:
+        steps = [{"step": "1. Embed Query",     "detail": f'Encode "{q.query}" → 384-dim vector'}]
+        docs  = vector_search(q.query, k=3)
+        steps.append({"step": "2. Vector Search",  "detail": f"Cosine similarity over {len(DOCS)} docs → top 3"})
+        steps.append({"step": "3. Augment Prompt", "detail": "Prepend top-3 chunks to the user question"})
+        ans = llm(ctx_prompt(docs, q.query))
+        steps.append({"step": "4. Generate", "detail": "LLM reads augmented prompt → answer"})
+        return {"answer": ans, "docs": docs, "steps": steps}
+    except RuntimeError as e:
+        return JSONResponse(status_code=500, content={"detail": str(e)})
 
 
 # ════════════════════════════════════════════════════════════════════════════════
 # 2 · ADVANCED RAG
 # ════════════════════════════════════════════════════════════════════════════════
 @router.post("/rag/advanced")
-def advanced_rag(q: Q):
+def advanced_rag(q: QueryRequest):
+    """Advanced RAG: query rewrite → hybrid search → RRF → LLM re-rank → generate.
+
+    Adds four improvements over naive RAG: query rewriting for better retrieval,
+    parallel dense+sparse search, Reciprocal Rank Fusion for result merging,
+    and LLM-based re-ranking for precision.
+    """
     if not DOCS:
         return no_docs_response()
     steps = []
@@ -191,11 +232,11 @@ def advanced_rag(q: Q):
         )
         steps.append({"step": "1. Query Rewriting", "detail": f'"{q.query}" → "{rewritten}"'})
 
-        vr = vsearch(rewritten, k=5)
-        br = bsearch(rewritten, k=5)
+        vector_results = vector_search(rewritten, k=5)
+        bm25_results   = bm25_search(rewritten, k=5)
         steps.append({"step": "2. Hybrid Search", "detail": "Dense vector + sparse BM25 in parallel"})
 
-        fused = rrf([vr, br])[:5]
+        fused = reciprocal_rank_fusion([vector_results, bm25_results])[:5]
         steps.append({"step": "3. RRF Fusion", "detail": "Reciprocal Rank Fusion: score = Σ 1/(rank+60)"})
 
         passages = "\n".join(f"ID {d['id']}: {d['text']}" for d in fused)
@@ -205,12 +246,12 @@ def advanced_rag(q: Q):
             max_tokens=256,
         )
         try:
-            m = re.search(r'\[.*?\]', raw, re.DOTALL)
-            if m:
-                id2sc = {r["id"]: r["score"] for r in json.loads(m.group())}
-                fused.sort(key=lambda d: id2sc.get(d["id"], 0), reverse=True)
-        except Exception:
-            pass
+            match = re.search(r'\[.*?\]', raw, re.DOTALL)
+            if match:
+                id_to_score = {r["id"]: r["score"] for r in json.loads(match.group())}
+                fused.sort(key=lambda d: id_to_score.get(d["id"], 0), reverse=True)
+        except Exception as parse_err:
+            logger.warning("Re-ranking parse failed, using RRF order: %s", parse_err)
         steps.append({"step": "4. LLM Re-ranking", "detail": "LLM scores each candidate — precision over recall"})
 
         docs = fused[:3]
@@ -244,7 +285,12 @@ AGENT_SYSTEM = (
 )
 
 @router.post("/rag/agentic")
-def agentic_rag(q: Q):
+def agentic_rag(q: QueryRequest):
+    """Agentic RAG: tool-calling agent that searches iteratively (up to 2 rounds).
+
+    Uses Claude's native tool-use API. The agent decides when to search and
+    when it has enough context to answer — no fixed retrieval pipeline.
+    """
     if not DOCS:
         return no_docs_response()
 
@@ -270,18 +316,18 @@ def agentic_rag(q: Q):
             messages.append({"role": "assistant", "content": resp.content})
 
             tool_results = []
-            for tu in tool_uses:
-                sq      = tu.input.get("query", q.query)
-                tk      = min(int(tu.input.get("top_k", 3)), 5)
-                results = vsearch(sq, k=tk)
+            for tool_use in tool_uses:
+                search_query = tool_use.input.get("query", q.query)
+                top_k_val    = min(int(tool_use.input.get("top_k", 3)), 5)
+                results      = vector_search(search_query, k=top_k_val)
                 all_docs.extend(results)
                 steps.append({
                     "step": f"{turn+1}. Tool Call",
-                    "detail": f'search_knowledge_base(query="{sq}", top_k={tk}) → {len(results)} hits',
+                    "detail": f'search_knowledge_base(query="{search_query}", top_k={top_k_val}) → {len(results)} hits',
                 })
                 tool_results.append({
                     "type": "tool_result",
-                    "tool_use_id": tu.id,
+                    "tool_use_id": tool_use.id,
                     "content": json.dumps([{"id": r["id"], "text": r["text"]} for r in results]),
                 })
             messages.append({"role": "user", "content": tool_results})
@@ -293,15 +339,19 @@ def agentic_rag(q: Q):
             steps.append({"step": "Final. Forced Answer", "detail": "Agent prompted to synthesize after max search rounds"})
 
     except anthropic.APIError as e:
+        logger.error("Agentic RAG API error: %s", e)
         return JSONResponse(status_code=500, content={"detail": f"Anthropic API error: {e}"})
+    except Exception as e:
+        logger.error("Agentic RAG unexpected error: %s", e)
+        return JSONResponse(status_code=500, content={"detail": f"Unexpected error: {e}"})
 
     # Deduplicate retrieved docs, preserving order
-    seen: set[int] = set()
+    seen:   set[int]   = set()
     unique: list[dict] = []
-    for d in all_docs:
-        if d["id"] not in seen:
-            seen.add(d["id"])
-            unique.append(d)
+    for doc in all_docs:
+        if doc["id"] not in seen:
+            seen.add(doc["id"])
+            unique.append(doc)
 
     return {"answer": final_answer, "docs": unique[:5], "steps": steps}
 
@@ -310,74 +360,95 @@ def agentic_rag(q: Q):
 # 4 · HYBRID RAG
 # ════════════════════════════════════════════════════════════════════════════════
 @router.post("/rag/hybrid")
-def hybrid_rag(q: Q):
+def hybrid_rag(q: QueryRequest):
+    """Hybrid RAG: dense (FAISS cosine) + sparse (TF-IDF BM25) fused via RRF.
+
+    Runs both retrieval methods in parallel and fuses results, then annotates
+    each returned chunk with which retrieval method(s) found it.
+    """
     if not DOCS:
         return no_docs_response()
     steps = []
 
-    vr = vsearch(q.query, k=5)
-    steps.append({"step": "1. Dense Retrieval",  "detail": "Semantic vector search → top 5 by cosine similarity"})
+    try:
+        vector_results = vector_search(q.query, k=5)
+        steps.append({"step": "1. Dense Retrieval",  "detail": "Semantic vector search → top 5 by cosine similarity"})
 
-    br = bsearch(q.query, k=5)
-    steps.append({"step": "2. Sparse Retrieval", "detail": "BM25 keyword match → top 5 by TF-IDF weight"})
+        bm25_results = bm25_search(q.query, k=5)
+        steps.append({"step": "2. Sparse Retrieval", "detail": "BM25 keyword match → top 5 by TF-IDF weight"})
 
-    fused = rrf([vr, br])[:3]
-    steps.append({"step": "3. RRF Fusion", "detail": "1/(rank+60) — prevents any single list from dominating"})
+        fused = reciprocal_rank_fusion([vector_results, bm25_results])[:3]
+        steps.append({"step": "3. RRF Fusion", "detail": "1/(rank+60) — prevents any single list from dominating"})
 
-    v_ids = {r["id"] for r in vr}
-    b_ids = {r["id"] for r in br}
-    for d in fused:
-        d["sources"] = (["vector"] if d["id"] in v_ids else []) + (["bm25"] if d["id"] in b_ids else [])
+        vector_ids = {r["id"] for r in vector_results}
+        bm25_ids   = {r["id"] for r in bm25_results}
+        for doc in fused:
+            doc["sources"] = (
+                (["vector"] if doc["id"] in vector_ids else []) +
+                (["bm25"]   if doc["id"] in bm25_ids   else [])
+            )
 
-    ans = llm(ctx_prompt(fused, q.query))
-    steps.append({"step": "4. Generate", "detail": "LLM answers from hybrid-fused top-3 docs"})
-    return {"answer": ans, "docs": fused, "steps": steps,
-            "vector_results": vr, "bm25_results": br}
+        ans = llm(ctx_prompt(fused, q.query))
+        steps.append({"step": "4. Generate", "detail": "LLM answers from hybrid-fused top-3 docs"})
+        return {"answer": ans, "docs": fused, "steps": steps,
+                "vector_results": vector_results, "bm25_results": bm25_results}
+    except RuntimeError as e:
+        return JSONResponse(status_code=500, content={"detail": str(e)})
 
 
 # ════════════════════════════════════════════════════════════════════════════════
 # 5 · GRAPH RAG
 # ════════════════════════════════════════════════════════════════════════════════
 @router.post("/rag/graph")
-def graph_rag(q: Q):
+def graph_rag(q: QueryRequest):
+    """Graph RAG: seed retrieval + 2-hop BFS on a sequential graph → re-score.
+
+    Models document adjacency as a graph (chunks linked in document order).
+    Seeds from vector search, expands via BFS, then re-scores all visited
+    nodes by similarity to find the most relevant multi-hop context.
+    """
     if not DOCS:
         return no_docs_response()
     steps = []
 
-    seeds      = vsearch(q.query, k=2)
-    seed_nodes = {f"d{r['id']}" for r in seeds}
-    steps.append({"step": "1. Seed Retrieval",
-                  "detail": f"Vector search finds seeds: {[f'd{r[\"id\"]}' for r in seeds]}"})
+    try:
+        seeds      = vector_search(q.query, k=2)
+        seed_nodes = {f"d{r['id']}" for r in seeds}
+        seed_labels = [f"d{r['id']}" for r in seeds]
+        steps.append({"step": "1. Seed Retrieval",
+                      "detail": f"Vector search finds seeds: {seed_labels}"})
 
-    visited  = set(seed_nodes)
-    frontier = set(seed_nodes)
-    for hop in range(2):
-        new_frontier: set[str] = set()
-        for node in frontier:
-            new_frontier.update(n for n in G.neighbors(node) if n not in visited)
-        visited  |= new_frontier
-        frontier  = new_frontier
-        steps.append({"step": f"2.{hop+1} Graph Hop {hop+1}",
-                      "detail": f"BFS adds {len(new_frontier)} neighbors → {len(visited)} total nodes visited"})
+        visited  = set(seed_nodes)
+        frontier = set(seed_nodes)
+        for hop in range(2):
+            new_frontier: set[str] = set()
+            for node in frontier:
+                new_frontier.update(n for n in G.neighbors(node) if n not in visited)
+            visited  |= new_frontier
+            frontier  = new_frontier
+            steps.append({"step": f"2.{hop+1} Graph Hop {hop+1}",
+                          "detail": f"BFS adds {len(new_frontier)} neighbors → {len(visited)} total nodes visited"})
 
-    doc_ids = [int(n[1:]) for n in visited if n.startswith("d")]
-    if doc_ids:
-        qe   = embedder.encode([q.query], normalize_embeddings=True)
-        sc   = (qe @ DOC_EMBS[doc_ids].T)[0]
-        best = sorted(zip(doc_ids, sc.tolist()), key=lambda x: x[1], reverse=True)[:3]
-        docs = [{"id": i, "text": DOCS[i], "score": round(s, 4)} for i, s in best]
-    else:
-        docs = seeds[:3]
-    steps.append({"step": "3. Re-score",
-                  "detail": f"Re-rank {len(doc_ids)} graph-expanded candidates by vector similarity"})
+        doc_ids = [int(n[1:]) for n in visited if n.startswith("d")]
+        if doc_ids:
+            query_emb  = embedder.encode([q.query], normalize_embeddings=True)
+            sim_scores = (query_emb @ DOC_EMBS[doc_ids].T)[0]
+            best       = sorted(zip(doc_ids, sim_scores.tolist()), key=lambda x: x[1], reverse=True)[:3]
+            docs       = [{"id": i, "text": DOCS[i], "score": round(s, 4)} for i, s in best]
+        else:
+            docs = seeds[:3]
+        steps.append({"step": "3. Re-score",
+                      "detail": f"Re-rank {len(doc_ids)} graph-expanded candidates by vector similarity"})
 
-    sub   = {f"d{d['id']}" for d in docs} | seed_nodes
-    edges = [[n, nb] for n in sub for nb in G.neighbors(n) if nb in visited]
+        sub_nodes = {f"d{d['id']}" for d in docs} | seed_nodes
+        edges     = [[n, nb] for n in sub_nodes for nb in G.neighbors(n) if nb in visited]
 
-    ans = llm(ctx_prompt(docs, q.query))
-    steps.append({"step": "4. Generate", "detail": "Answer enriched via multi-hop graph traversal"})
-    return {"answer": ans, "docs": docs, "steps": steps,
-            "graph_edges": edges[:20], "visited_nodes": list(visited)}
+        ans = llm(ctx_prompt(docs, q.query))
+        steps.append({"step": "4. Generate", "detail": "Answer enriched via multi-hop graph traversal"})
+        return {"answer": ans, "docs": docs, "steps": steps,
+                "graph_edges": edges[:20], "visited_nodes": list(visited)}
+    except RuntimeError as e:
+        return JSONResponse(status_code=500, content={"detail": str(e)})
 
 
 # ════════════════════════════════════════════════════════════════════════════════
@@ -386,14 +457,21 @@ def graph_rag(q: Q):
 def _parse_score(raw: str) -> dict:
     """Extract a JSON object from an LLM response, falling back gracefully."""
     try:
-        m = re.search(r'\{.*\}', raw, re.DOTALL)
-        return json.loads(m.group()) if m else {"score": 0.0, "reasoning": "Parse error"}
-    except Exception:
+        match = re.search(r'\{.*\}', raw, re.DOTALL)
+        return json.loads(match.group()) if match else {"score": 0.0, "reasoning": "Parse error"}
+    except Exception as e:
+        logger.warning("Score parse failed (raw=%r): %s", raw[:100], e)
         return {"score": 0.0, "reasoning": "Parse error"}
 
 
 @router.post("/rag/evaluate")
-def rag_evaluate(req: EvalReq):
+def rag_evaluate(req: EvaluationRequest):
+    """LLM-as-Judge evaluation across four RAG quality dimensions.
+
+    Scores: Faithfulness (no hallucination), Answer Relevancy (on-topic),
+    Context Utilization (right chunks retrieved), and optionally Correctness
+    (vs ground truth). Returns per-metric scores plus an overall average.
+    """
     ctx_block = "\n".join(f"[{i+1}] {c}" for i, c in enumerate(req.contexts))
 
     faithfulness_prompt = f"""You are an expert RAG evaluator. Score the FAITHFULNESS of the answer.
@@ -445,9 +523,12 @@ Return a JSON object with exactly these keys:
 
 JSON only, no extra text."""
 
-    faithfulness = _parse_score(llm(faithfulness_prompt, max_tokens=300))
-    relevancy    = _parse_score(llm(relevancy_prompt,    max_tokens=200))
-    context_util = _parse_score(llm(context_prompt,      max_tokens=200))
+    try:
+        faithfulness  = _parse_score(llm(faithfulness_prompt, max_tokens=300))
+        relevancy     = _parse_score(llm(relevancy_prompt,    max_tokens=200))
+        context_util  = _parse_score(llm(context_prompt,      max_tokens=200))
+    except RuntimeError as e:
+        return JSONResponse(status_code=500, content={"detail": str(e)})
 
     scores = {
         "faithfulness":        round(faithfulness.get("score", 0.0), 3),
@@ -470,7 +551,13 @@ Return a JSON object with exactly these keys:
 - reasoning: one sentence explanation
 
 JSON only, no extra text."""
-        scores["correctness"] = round(_parse_score(llm(correctness_prompt, max_tokens=200)).get("score", 0.0), 3)
+        try:
+            scores["correctness"] = round(
+                _parse_score(llm(correctness_prompt, max_tokens=200)).get("score", 0.0), 3
+            )
+        except RuntimeError as e:
+            logger.warning("Correctness scoring failed: %s", e)
+            scores["correctness"] = 0.0
 
     overall = round(sum(scores.values()) / len(scores), 3)
 
