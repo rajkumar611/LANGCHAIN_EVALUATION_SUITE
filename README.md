@@ -110,7 +110,7 @@ cp .env.example .env
 
 # 4. Run
 python main.py
-# → http://localhost:8000
+# → http://localhost:8080
 ```
 
 ### Docker
@@ -121,7 +121,7 @@ docker compose up
 
 # Or without compose
 docker build -t rag-eval .
-docker run -p 8000:8000 -e ANTHROPIC_API_KEY=sk-... rag-eval
+docker run -p 8080:8080 -e ANTHROPIC_API_KEY=sk-... rag-eval
 ```
 
 ---
@@ -191,7 +191,7 @@ tests/test_rag_endpoints.py  # Integration tests: /upload, /rag/naive, /rag/hybr
 | `POST` | `/langchain/*` | 10 LangChain pattern demos |
 | `DELETE` | `/langchain/memory/{session_id}` | Clear conversation session |
 
-Full interactive docs: `http://localhost:8000/docs`
+Full interactive docs: `http://localhost:8080/docs`
 
 ---
 

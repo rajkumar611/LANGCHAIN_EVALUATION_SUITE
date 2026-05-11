@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 pip install -r requirements.txt   # first time only (downloads ~80 MB embedding model)
-python main.py                    # serves on http://localhost:8000
+python main.py                    # serves on http://localhost:8080
 ```
 
 `main.py` loads `.env`, validates `ANTHROPIC_API_KEY` is set (exits with a clear message if not), then starts uvicorn. `reload` is enabled only when `ENV=development` (the default).
@@ -65,7 +65,7 @@ All settings are defined as a `pydantic_settings.BaseSettings` subclass and impo
 | `max_chunks` | `300` | Max chunks stored per upload |
 | `max_chunk_chars` | `400` | Max chars per chunk |
 | `max_search_rounds` | `2` | Max agentic RAG tool-call iterations |
-| `port` | `8000` | Server port |
+| `port` | `8080` | Server port |
 | `env` | `development` | Set to `production` to disable reload |
 
 ## RAG module (`src/rag/routes.py`)
