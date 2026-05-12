@@ -1,4 +1,4 @@
-<div style="flex:1;overflow-y:auto">
+<div style="flex:1;overflow-y:auto;width:100%">
   <div style="padding:40px 48px 56px;width:100%;box-sizing:border-box">
 
     <!-- Header -->
@@ -37,11 +37,55 @@
         </div>
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
           <div style="font-size:13px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Step 2 — Indexing</div>
-          <div style="font-size:14px;color:var(--muted);line-height:1.75">Each chunk is encoded into a single embedding vector representing its full content. Only the vector and the raw text are stored — no additional signals, weights, or positional information.</div>
+          <div style="font-size:14px;color:var(--muted);line-height:1.75">Each chunk is encoded into a single embedding vector representing its full content. These vectors are appended to a flat NumPy matrix (<code style="background:var(--bg);padding:1px 6px;border-radius:4px;font-size:13px">DOC_EMBS</code>) — this matrix <em>is</em> the index. Only the vector and the raw text are stored alongside each entry; no additional signals, weights, or positional information.</div>
         </div>
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
           <div style="font-size:13px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Step 3 — Query &amp; Retrieval</div>
           <div style="font-size:14px;color:var(--muted);line-height:1.75">The user's raw question is used directly — no rewriting, decomposition, or expansion. It is embedded using the same model and compared against all chunk vectors via <strong style="color:var(--text)">cosine similarity</strong> (computed as a NumPy dot product). The top-K scoring chunks are returned. No re-ranking is applied.</div>
+
+          <!-- Cosine similarity formula + vector diagram -->
+          <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:20px;align-items:center">
+
+            <!-- Formula block -->
+            <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 18px;flex:1;min-width:220px">
+              <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Cosine Similarity</div>
+              <div style="font-size:17px;text-align:center;color:var(--text);font-family:Georgia,serif;letter-spacing:.02em">
+                cos(θ) = <span style="display:inline-block;vertical-align:middle;text-align:center">
+                  <span style="display:block;border-bottom:1.5px solid var(--text);padding-bottom:3px"><strong>A</strong> · <strong>B</strong></span>
+                  <span style="display:block;padding-top:3px">‖<strong>A</strong>‖ · ‖<strong>B</strong>‖</span>
+                </span>
+              </div>
+              <div style="margin-top:10px;font-size:12px;color:var(--muted);line-height:1.6">
+                <span style="color:var(--text)"><strong>A</strong></span> = query vector &nbsp;·&nbsp; <span style="color:var(--text)"><strong>B</strong></span> = chunk vector<br>
+                Score → <strong style="color:var(--text)">1.0</strong> (identical direction) &nbsp;·&nbsp; <strong style="color:var(--text)">0.0</strong> (orthogonal)
+              </div>
+            </div>
+
+            <!-- SVG angle diagram -->
+            <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 16px;display:flex;flex-direction:column;align-items:center;gap:8px">
+              <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Vector Angle</div>
+              <svg width="170" height="140" viewBox="0 0 170 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- axes -->
+                <line x1="20" y1="120" x2="160" y2="120" stroke="var(--border)" stroke-width="1"/>
+                <line x1="20" y1="120" x2="20"  y2="10"  stroke="var(--border)" stroke-width="1"/>
+                <!-- arc for θ -->
+                <path d="M 52 120 A 32 32 0 0 1 37 90" stroke="#f59e0b" stroke-width="1.5" fill="none"/>
+                <text x="54" y="102" font-size="11" fill="#f59e0b" font-family="Georgia,serif">θ</text>
+                <!-- chunk vector B (shallow angle) -->
+                <line x1="20" y1="120" x2="148" y2="68" stroke="#60a5fa" stroke-width="2"/>
+                <polygon points="148,68 138,72 142,62" fill="#60a5fa"/>
+                <text x="150" y="65" font-size="11" fill="#60a5fa" font-family="Georgia,serif">B</text>
+                <!-- query vector A (steeper angle) -->
+                <line x1="20" y1="120" x2="62" y2="18" stroke="#34d399" stroke-width="2"/>
+                <polygon points="62,18 55,28 65,27" fill="#34d399"/>
+                <text x="64" y="16" font-size="11" fill="#34d399" font-family="Georgia,serif">A</text>
+                <!-- origin dot -->
+                <circle cx="20" cy="120" r="3" fill="var(--text)"/>
+              </svg>
+              <div style="font-size:11px;color:var(--muted);text-align:center">Smaller θ → higher similarity</div>
+            </div>
+
+          </div>
         </div>
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
           <div style="font-size:13px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Step 4 — Generation</div>
