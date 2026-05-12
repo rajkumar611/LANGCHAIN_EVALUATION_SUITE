@@ -1,0 +1,28 @@
+NEXUS CORP — KUBERNETES UPGRADE FAQ
+=====================================
+
+Quick answers for engineers completing the Kubernetes v1.28 to v1.29.2 upgrade.
+
+Q: Why do we need to upgrade Kubernetes?
+A: CVE-2024-7891 is a critical privilege escalation vulnerability in Kubernetes v1.26–v1.28 with a public exploit. Upgrading to v1.29.2 removes the vulnerability. Deadline is 72 hours.
+
+Q: Who needs to act?
+A: Platform Team and AI Research Team. Both use Kubernetes v1.28 in production. Security Team (Marcus Rodriguez) will confirm completion.
+
+Q: Which projects are affected?
+A: Project Nova, Project Atlas, and Project Meridian all use Kubernetes v1.28. All three must be validated after the upgrade.
+
+Q: How long will the upgrade take?
+A: The rolling cluster restart takes approximately 20–30 minutes. Coordinate with your team manager to schedule during a low-traffic window to minimise request drops.
+
+Q: What is the upgrade command?
+A: Follow the runbook provided by the Security Team. Do not deviate from the steps without approval from Marcus Rodriguez.
+
+Q: What do I do after the upgrade?
+A: Run the Security Team's automated validation suite. File your compliance confirmation within 48 hours of completing the upgrade. Non-compliance will be escalated to the CTO.
+
+Q: What if I find a blocker?
+A: Contact Nina Okafor or Tom Brennan on the Security Team immediately. Do not delay — the 72-hour deadline is firm.
+
+Q: Is there any risk of downtime?
+A: Moderate risk. Project Nova inference endpoints may drop requests for 2–5 minutes during the rolling update. Plan accordingly.

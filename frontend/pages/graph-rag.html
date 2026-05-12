@@ -5,27 +5,27 @@
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:10px">
       <span style="background:#1e3a5f;color:var(--blue);font-size:20px;font-weight:700;padding:4px 12px;border-radius:999px;letter-spacing:.05em">STRATEGY 5 OF 5</span>
       <span style="font-size:20px;font-weight:800;letter-spacing:-0.4px;color:var(--text)">Graph RAG</span>
-      <span style="background:#78350f22;color:var(--amber);border:1px solid var(--amber);font-size:20px;font-weight:700;padding:4px 12px;border-radius:999px;letter-spacing:.05em">Complex Reasoning</span>
+      <span style="background:#78350f22;color:var(--amber);border:1px solid var(--amber);font-size:11px;font-weight:700;padding:4px 12px;border-radius:999px;letter-spacing:.05em">Multi-Hop Reasoning</span>
     </div>
     <p style="font-size:17px;color:var(--muted);line-height:1.8;margin-bottom:32px;">
-      Documents are nodes in a sequential knowledge graph. Retrieval seeds on the best matching chunk, then expands across graph edges using BFS to pull in related context — ideal for multi-hop and relational questions.
+      Instead of retrieving isolated text chunks, Graph RAG extracts <strong style="color:var(--text)">entities</strong> and <strong style="color:var(--text)">relationships</strong> from documents and stores them as a knowledge graph. At query time, the system traverses edges between entities — following chains of connections across multiple documents — to answer questions that no single chunk could resolve alone.
     </p>
 
     <!-- Pipeline -->
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px;margin-bottom:32px">
-      <div style="font-size:17px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:16px">Pipeline</div>
+      <div style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:16px">Pipeline</div>
       <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px">
-        <div style="background:var(--bg);border:1px solid var(--blue);color:var(--blue);border-radius:6px;padding:7px 14px;font-size:13px;font-weight:600">User Question</div>
+        <div style="background:var(--bg);border:1px solid var(--blue);color:var(--blue);border-radius:6px;padding:7px 14px;font-size:13px;font-weight:600">1. Documents</div>
         <span style="color:var(--muted);font-size:13px">→</span>
-        <div style="background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:7px 14px;font-size:13px;font-weight:600">Seed Retrieval (vector search)</div>
+        <div style="background:var(--bg);border:1px solid var(--amber);color:var(--amber);border-radius:6px;padding:7px 14px;font-size:13px;font-weight:600">2. Entity + Relationship Extraction</div>
         <span style="color:var(--muted);font-size:13px">→</span>
-        <div style="background:var(--bg);border:1px solid var(--amber);color:var(--amber);border-radius:6px;padding:7px 14px;font-size:13px;font-weight:600">BFS Graph Hop 1</div>
+        <div style="background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:7px 14px;font-size:13px;font-weight:600">3. Knowledge Graph (Nodes + Edges)</div>
         <span style="color:var(--muted);font-size:13px">→</span>
-        <div style="background:var(--bg);border:1px solid var(--amber);color:var(--amber);border-radius:6px;padding:7px 14px;font-size:13px;font-weight:600">BFS Graph Hop 2</div>
+        <div style="background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:7px 14px;font-size:13px;font-weight:600">4. Query → Entity Match</div>
         <span style="color:var(--muted);font-size:13px">→</span>
-        <div style="background:var(--bg);border:1px solid var(--purple);color:var(--purple);border-radius:6px;padding:7px 14px;font-size:13px;font-weight:600">Re-score All Candidates</div>
+        <div style="background:var(--bg);border:1px solid var(--purple);color:var(--purple);border-radius:6px;padding:7px 14px;font-size:13px;font-weight:600">5. Multi-Hop Graph Traversal</div>
         <span style="color:var(--muted);font-size:13px">→</span>
-        <div style="background:var(--bg);border:1px solid var(--green);color:var(--green);border-radius:6px;padding:7px 14px;font-size:13px;font-weight:600">LLM Answer</div>
+        <div style="background:var(--bg);border:1px solid var(--green);color:var(--green);border-radius:6px;padding:7px 14px;font-size:13px;font-weight:600">6. LLM Answer</div>
       </div>
     </div>
 
@@ -33,45 +33,190 @@
     <div style="margin-bottom:32px">
       <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--blue);margin-bottom:12px">How It Works</div>
       <div style="display:grid;gap:10px">
+
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
-          <div style="font-size:13px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Step 1 — Graph Construction</div>
-          <div style="font-size:14px;color:var(--muted);line-height:1.75">At upload time, chunks are arranged as nodes in a sequential graph where each node connects to its immediate neighbours — the chunks before and after it in the document. This preserves the document's natural flow and structure without requiring entity extraction or manual annotation.</div>
+          <div style="font-size:13px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Step 1 — Entity & Relationship Extraction</div>
+          <div style="font-size:14px;color:var(--muted);line-height:1.75">An LLM reads each document and extracts <strong style="color:var(--text)">entities</strong> (people, teams, technologies, projects, locations, concepts) and the <strong style="color:var(--text)">relationships</strong> between them (works_at, manages, uses, depends_on, located_in). This is the most expensive step — it requires one LLM call per document — but it is a one-time cost done during ingestion, not at query time. The quality of the entire graph depends on this step: missed entities or mislabelled relationships propagate silently into wrong answers.</div>
         </div>
+
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
-          <div style="font-size:13px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Step 2 — Seed Retrieval</div>
-          <div style="font-size:14px;color:var(--muted);line-height:1.75">The user's query is embedded and the top-K most similar chunks are found via vector search. These are the <strong style="color:var(--green)">seed nodes</strong> — the starting points for graph traversal. Seed selection uses cosine similarity, the same as Naive RAG.</div>
+          <div style="font-size:13px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Step 2 — Knowledge Graph Construction</div>
+          <div style="font-size:14px;color:var(--muted);line-height:1.75">Extracted entities become <strong style="color:var(--text)">nodes</strong> with attributes (name, role, version, date). Extracted relationships become <strong style="color:var(--text)">directed edges</strong> between those nodes. The graph is stored in a <strong style="color:var(--text)">graph database</strong> such as Neo4j, ArangoDB, or Amazon Neptune, which is purpose-built for fast multi-hop traversal. Related entities are also grouped into <strong style="color:var(--text)">communities</strong> — clusters of tightly connected nodes — which can be summarised and retrieved as a unit for broader questions.</div>
         </div>
+
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
-          <div style="font-size:13px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Step 3 — BFS Expansion</div>
-          <div style="font-size:14px;color:var(--muted);line-height:1.75">Starting from the seed nodes, the system traverses the graph via Breadth-First Search to collect neighbouring chunks. This brings in surrounding context — the passage before and after each seed — that may not have matched the query directly but provides critical continuity.</div>
+          <div style="font-size:13px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Step 3 — Hybrid Storage (Graph DB + Vector DB)</div>
+          <div style="font-size:14px;color:var(--muted);line-height:1.75">Graph RAG uses <strong style="color:var(--text)">two databases simultaneously</strong>. The graph database stores the explicit structure: nodes, edges, and attributes. A vector database stores semantic embeddings of each entity and relationship description. This pairing enables both <em>structural traversal</em> ("follow the manages edge from Sarah") and <em>semantic lookup</em> ("find entities related to 'container orchestration'") — covering questions the other database alone cannot answer.</div>
+
+          <!-- Graph DB + Vector DB visual -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px">
+            <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px 16px">
+              <div style="font-size:12px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Graph Database</div>
+              <div style="font-size:13px;color:var(--muted);line-height:1.75">
+                <div style="margin-bottom:4px"><span style="color:var(--text)">Nodes:</span> [Alex Kumar], [Platform Team], [Kubernetes]</div>
+                <div style="margin-bottom:4px"><span style="color:var(--text)">Edges:</span> Alex –member_of→ Platform Team –uses→ Kubernetes</div>
+                <div style="color:var(--muted);font-size:12px;margin-top:6px">Neo4j · ArangoDB · Amazon Neptune</div>
+              </div>
+            </div>
+            <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px 16px">
+              <div style="font-size:12px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Vector Database</div>
+              <div style="font-size:13px;color:var(--muted);line-height:1.75">
+                <div style="margin-bottom:4px"><span style="color:var(--text)">Entity emb:</span> "Alex Kumar" → [0.23, -0.51, ...]</div>
+                <div style="margin-bottom:4px"><span style="color:var(--text)">Rel emb:</span> "member_of" → [0.14, 0.67, ...]</div>
+                <div style="color:var(--muted);font-size:12px;margin-top:6px">Pinecone · Chroma · Weaviate · Milvus</div>
+              </div>
+            </div>
+          </div>
         </div>
+
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
-          <div style="font-size:13px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Step 4 — Re-scoring</div>
-          <div style="font-size:14px;color:var(--muted);line-height:1.75">All collected chunks (seeds and BFS neighbours) are re-scored against the original query using cosine similarity. The highest-scoring subset is selected. Re-scoring ensures that BFS-expanded context that turns out to be irrelevant is ranked below seed nodes that directly match.</div>
+          <div style="font-size:13px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Step 4 — Query Time: Entity Matching</div>
+          <div style="font-size:14px;color:var(--muted);line-height:1.75">The user's question is parsed to identify key entities and concepts. Vector search finds the semantically closest nodes in the graph as entry points. These become the <strong style="color:var(--text)">starting nodes</strong> for traversal. This step determines which part of the graph the traversal begins from — choosing the wrong entry node means the traversal follows the wrong chain entirely.</div>
         </div>
+
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
-          <div style="font-size:13px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Step 5 — LLM Generation</div>
-          <div style="font-size:14px;color:var(--muted);line-height:1.75">The final scored chunks are passed to the LLM. The result display shows which nodes were seed nodes (green) and which were BFS-expanded neighbours (grey), giving you visibility into how the graph traversal contributed to the answer.</div>
+          <div style="font-size:13px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Step 5 — Multi-Hop Graph Traversal</div>
+          <div style="font-size:14px;color:var(--muted);line-height:1.75">The system follows edges from the starting node, collecting each linked entity along the path. Each edge crossing is called a <strong style="color:var(--text)">hop</strong>. A 3-hop traversal can connect an employee → their team → the team's technology → the technology's vulnerability. Crucially, this information may live in <strong style="color:var(--text)">four separate documents</strong> — the graph stitches them together into one coherent reasoning chain. The traversal path itself can be shown to the user as a transparent audit trail for the answer.</div>
+        </div>
+
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
+          <div style="font-size:13px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Step 6 — LLM Generation</div>
+          <div style="font-size:14px;color:var(--muted);line-height:1.75">The collected entities, their attributes, and the traversal path are passed to the LLM as context. Because the context is structured and relationship-constrained — not loose text chunks — the LLM is less likely to hallucinate connections that do not exist in the data. The answer can include a citation showing the exact graph path that produced it.</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Multi-hop reasoning visual -->
+    <div style="margin-bottom:32px">
+      <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--purple);margin-bottom:12px">What Is a Hop?</div>
+      <p style="font-size:14px;color:var(--muted);line-height:1.8;margin-bottom:16px">A <strong style="color:var(--text)">hop</strong> is one step through an edge in the knowledge graph — like jumping from stone to stone across a river. Each jump follows a named relationship between two entities. Questions that require multiple jumps are called <em>multi-hop</em> questions.</p>
+
+      <div style="display:grid;gap:10px">
+
+        <!-- 1-hop -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
+          <div style="font-size:12px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">1-Hop — Direct Relationship</div>
+          <div style="font-size:13px;color:var(--muted);font-style:italic;margin-bottom:10px">"Where does Alex work?"</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <div style="background:var(--bg);border:1px solid var(--blue);color:var(--blue);border-radius:6px;padding:6px 14px;font-size:13px;font-weight:600">[Alex Kumar]</div>
+            <div style="font-size:12px;color:var(--amber);font-weight:600">──member_of──▶</div>
+            <div style="background:var(--bg);border:1px solid var(--green);color:var(--green);border-radius:6px;padding:6px 14px;font-size:13px;font-weight:600">[Platform Team]</div>
+            <div style="font-size:12px;color:var(--muted);margin-left:8px">= Answer</div>
+          </div>
+        </div>
+
+        <!-- 2-hop -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
+          <div style="font-size:12px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">2-Hop — Through One Entity</div>
+          <div style="font-size:13px;color:var(--muted);font-style:italic;margin-bottom:10px">"What technology does Alex's team use?"</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <div style="background:var(--bg);border:1px solid var(--blue);color:var(--blue);border-radius:6px;padding:6px 14px;font-size:13px;font-weight:600">[Alex Kumar]</div>
+            <div style="font-size:12px;color:var(--amber);font-weight:600">──member_of──▶</div>
+            <div style="background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 14px;font-size:13px;font-weight:600">[Platform Team]</div>
+            <div style="font-size:12px;color:var(--amber);font-weight:600">──uses──▶</div>
+            <div style="background:var(--bg);border:1px solid var(--green);color:var(--green);border-radius:6px;padding:6px 14px;font-size:13px;font-weight:600">[Kubernetes]</div>
+            <div style="font-size:12px;color:var(--muted);margin-left:8px">= Answer</div>
+          </div>
+        </div>
+
+        <!-- 3-hop -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
+          <div style="font-size:12px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">3-Hop — Crosses 3 Documents</div>
+          <div style="font-size:13px;color:var(--muted);font-style:italic;margin-bottom:10px">"Does Alex's team use any vulnerable technology?"</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <div style="background:var(--bg);border:1px solid var(--blue);color:var(--blue);border-radius:6px;padding:6px 14px;font-size:13px;font-weight:600">[Alex Kumar]</div>
+            <div style="font-size:12px;color:var(--amber);font-weight:600">──member_of──▶</div>
+            <div style="background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 14px;font-size:13px;font-weight:600">[Platform Team]</div>
+            <div style="font-size:12px;color:var(--amber);font-weight:600">──uses──▶</div>
+            <div style="background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 14px;font-size:13px;font-weight:600">[Kubernetes]</div>
+            <div style="font-size:12px;color:var(--amber);font-weight:600">──has_vulnerability──▶</div>
+            <div style="background:var(--bg);border:1px solid var(--red);color:var(--red);border-radius:6px;padding:6px 14px;font-size:13px;font-weight:600">[CVE-2024-7891]</div>
+            <div style="font-size:12px;color:var(--muted);margin-left:8px">= Answer</div>
+          </div>
+          <div style="margin-top:12px;padding:10px 12px;background:var(--bg);border-radius:6px;font-size:12px;color:var(--muted);line-height:1.7">
+            Each node comes from a <strong style="color:var(--text)">different document</strong>: Alex is in the Team Directory, Kubernetes is in the Tech Stack doc, the CVE is in the Security Bulletin. Graph RAG connects them automatically. Naive or Advanced RAG would need all this information to appear together in one chunk — it never does.
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Why multiple documents matter -->
+    <div style="margin-bottom:32px">
+      <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--blue);margin-bottom:12px">Why Multiple Documents Are Essential</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px">
+          <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Single Document</div>
+          <ul style="font-size:13px;color:var(--muted);line-height:1.85;padding-left:16px;margin:0">
+            <li style="margin-bottom:5px">All relationships already visible in one place</li>
+            <li style="margin-bottom:5px">LLM can infer connections directly from text</li>
+            <li style="margin-bottom:5px">Graph build cost (LLM calls) not justified</li>
+            <li>Advanced RAG handles this equally well</li>
+          </ul>
+          <div style="margin-top:12px;padding:8px 12px;background:var(--bg);border-radius:6px;font-size:12px;color:var(--amber)">Graph RAG adds ~20% value over Advanced RAG</div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--green);border-radius:var(--radius);padding:18px 20px">
+          <div style="font-size:12px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Multiple Documents</div>
+          <ul style="font-size:13px;color:var(--muted);line-height:1.85;padding-left:16px;margin:0">
+            <li style="margin-bottom:5px">Relationships are scattered — no single chunk has the full picture</li>
+            <li style="margin-bottom:5px">Graph is the only thing connecting them reliably</li>
+            <li style="margin-bottom:5px">Multi-hop queries become systematic, not lucky</li>
+            <li>Value scales exponentially with document count</li>
+          </ul>
+          <div style="margin-top:12px;padding:8px 12px;background:#052e16;border-radius:6px;font-size:12px;color:var(--green)">Graph RAG adds 300–800%+ value over Advanced RAG</div>
+        </div>
+      </div>
+
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px">
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px">Real Example — 4 Documents, 1 Answer</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px">
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-size:12px">
+            <div style="font-weight:700;color:var(--blue);margin-bottom:4px">Doc 1 — Team Directory</div>
+            <div style="color:var(--muted)">Alex Kumar is a member of the Platform Team. Sarah Chen manages the Platform Team.</div>
+          </div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-size:12px">
+            <div style="font-weight:700;color:var(--purple);margin-bottom:4px">Doc 2 — Tech Stack</div>
+            <div style="color:var(--muted)">Platform Team uses Kubernetes v1.28, Terraform, and PostgreSQL v15.</div>
+          </div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-size:12px">
+            <div style="font-weight:700;color:var(--amber);margin-bottom:4px">Doc 3 — Projects</div>
+            <div style="color:var(--muted)">Project Nova (Platform Team) uses Kubernetes. Project Atlas uses Terraform + PostgreSQL.</div>
+          </div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-size:12px">
+            <div style="font-weight:700;color:var(--red);margin-bottom:4px">Doc 4 — Security Bulletin</div>
+            <div style="color:var(--muted)">CVE-2024-7891: Kubernetes v1.28 critical privilege escalation. Patch immediately.</div>
+          </div>
+        </div>
+        <div style="padding:10px 14px;background:var(--bg);border-radius:6px;font-size:13px;color:var(--muted);line-height:1.75">
+          <strong style="color:var(--text)">Question:</strong> <em>"Which employees need to apply the critical security patch urgently?"</em><br>
+          <strong style="color:var(--green)">Graph RAG path:</strong> CVE-2024-7891 → Kubernetes → Platform Team → Alex Kumar, Sarah Chen (+ all members)<br>
+          <strong style="color:var(--red)">Advanced RAG:</strong> Returns the security bulletin chunk. Has no idea which team uses Kubernetes or who is on that team.
         </div>
       </div>
     </div>
 
-    <!-- When to use / When not to use -->
+    <!-- When to use / when not -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:32px">
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px">
         <div style="font-size:13px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">When to Use It</div>
         <ul style="font-size:14px;color:var(--muted);line-height:1.8;padding-left:16px;margin:0">
-          <li style="margin-bottom:6px">Questions requiring context around the retrieved passage — what came before or after</li>
-          <li style="margin-bottom:6px">Documents with sequential dependencies — reports, manuals, narratives</li>
-          <li>Multi-hop reasoning across related, adjacent sections</li>
+          <li style="margin-bottom:6px">More than 10 related documents with scattered relationships</li>
+          <li style="margin-bottom:6px">Questions that require reasoning across multiple documents at once</li>
+          <li style="margin-bottom:6px">Explainability is required — users need to see the reasoning chain</li>
+          <li style="margin-bottom:6px">Enterprise systems: HR, compliance, security, project tracking</li>
+          <li>Questions about who, where, which team, what technology — relationship-heavy</li>
         </ul>
       </div>
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px">
         <div style="font-size:13px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">When Not to Use It</div>
         <ul style="font-size:14px;color:var(--muted);line-height:1.8;padding-left:16px;margin:0">
-          <li style="margin-bottom:6px">Documents are unordered collections — FAQs, notes, bullet lists</li>
-          <li style="margin-bottom:6px">Each chunk is fully self-contained — no benefit to reading neighbours</li>
-          <li>You need the fastest possible retrieval with minimal overhead</li>
+          <li style="margin-bottom:6px">Working with a single document — overhead is not justified</li>
+          <li style="margin-bottom:6px">Questions are conceptual or fuzzy ("what are best practices?")</li>
+          <li style="margin-bottom:6px">Documents update frequently — graph re-extraction is expensive</li>
+          <li style="margin-bottom:6px">Budget is tight — entity extraction requires many LLM calls</li>
+          <li>Team lacks expertise to define the right relationship schema</li>
         </ul>
       </div>
     </div>
@@ -81,17 +226,21 @@
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px">
         <div style="font-size:13px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">Strengths</div>
         <ul style="font-size:14px;color:var(--muted);line-height:1.8;padding-left:16px;margin:0">
-          <li style="margin-bottom:5px">Retrieves surrounding context automatically — no prompt engineering needed</li>
-          <li style="margin-bottom:5px">Good for documents where meaning spans multiple adjacent passages</li>
-          <li>No extra metadata needed — graph is built from chunk order alone</li>
+          <li style="margin-bottom:5px">Multi-hop reasoning is a <em>native</em> graph operation — not an approximation</li>
+          <li style="margin-bottom:5px">Explicit relationships reduce hallucination — the model can't invent connections that aren't in the graph</li>
+          <li style="margin-bottom:5px">Fully explainable — every answer comes with a traceable relationship path</li>
+          <li style="margin-bottom:5px">Efficient at scale — build once, traverse cheaply across thousands of documents</li>
+          <li>Handles ambiguous entity names via attribute context (two people named "Alex" are distinct nodes)</li>
         </ul>
       </div>
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px">
         <div style="font-size:13px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">Limitations</div>
         <ul style="font-size:14px;color:var(--muted);line-height:1.8;padding-left:16px;margin:0">
-          <li style="margin-bottom:5px">Sequential graph is a simplification — real knowledge graphs use entity extraction</li>
-          <li style="margin-bottom:5px">BFS expansion can bring in irrelevant neighbours near the seed</li>
-          <li>More expensive than naive retrieval — extra graph traversal and re-scoring</li>
+          <li style="margin-bottom:5px">Expensive to build — every document requires LLM-powered extraction</li>
+          <li style="margin-bottom:5px">Garbage in, garbage out — bad extraction produces a graph that answers confidently but incorrectly</li>
+          <li style="margin-bottom:5px">Missed relationships are silent — the graph doesn't warn you about what it doesn't know</li>
+          <li style="margin-bottom:5px">Poor for fuzzy or conceptual questions — graphs store facts, not intuitions</li>
+          <li>Requires domain expertise to define the right entity types and relationship schema</li>
         </ul>
       </div>
     </div>
@@ -100,29 +249,50 @@
     <div style="margin-bottom:36px">
       <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--blue);margin-bottom:12px">Key Concepts</div>
       <div style="display:grid;gap:10px">
+
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
-          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">Sequential Graph <span style="font-size:17px;font-weight:600;color:var(--amber);background:#78350f22;padding:2px 8px;border-radius:999px;margin-left:6px">nodes=chunks · edges=adjacency</span></div>
-          <div style="font-size:14px;color:var(--muted);line-height:1.7">Each document chunk is a node. Edges connect sequential neighbours — chunk 5 connects to chunks 4 and 6. Built with NetworkX. This graph captures the document's linear narrative structure without requiring entity extraction.</div>
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">Node</div>
+          <div style="font-size:14px;color:var(--muted);line-height:1.7">An entity in the knowledge graph — a person, company, technology, project, concept, or location. Each node has attributes: <code style="background:var(--bg);padding:1px 6px;border-radius:4px;font-size:13px">[Alex Kumar] {title: "Engineer", joined: 2022}</code>. Nodes are the "things" the system knows about.</div>
         </div>
+
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
-          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">BFS Expansion <span style="font-size:17px;font-weight:600;color:var(--blue);background:#1e3a5f33;padding:2px 8px;border-radius:999px;margin-left:6px">breadth-first search from seed nodes</span></div>
-          <div style="font-size:14px;color:var(--muted);line-height:1.7">Starting from the seed nodes identified by vector search, Breadth-First Search expands outward to collect all neighbours within a certain hop distance. This brings in the surrounding passage that may not have matched the query directly but provides essential context.</div>
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">Edge</div>
+          <div style="font-size:14px;color:var(--muted);line-height:1.7">A directed, named relationship between two nodes. Examples: <code style="background:var(--bg);padding:1px 6px;border-radius:4px;font-size:13px">works_at</code>, <code style="background:var(--bg);padding:1px 6px;border-radius:4px;font-size:13px">manages</code>, <code style="background:var(--bg);padding:1px 6px;border-radius:4px;font-size:13px">uses</code>, <code style="background:var(--bg);padding:1px 6px;border-radius:4px;font-size:13px">has_vulnerability</code>, <code style="background:var(--bg);padding:1px 6px;border-radius:4px;font-size:13px">depends_on</code>. Edges can also carry attributes, such as <code style="background:var(--bg);padding:1px 6px;border-radius:4px;font-size:13px">{since: 2021}</code> on a <code style="background:var(--bg);padding:1px 6px;border-radius:4px;font-size:13px">works_at</code> edge.</div>
         </div>
+
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
-          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">Re-scoring <span style="font-size:17px;font-weight:600;color:var(--purple);background:#4c1d9522;padding:2px 8px;border-radius:999px;margin-left:6px">re-rank expanded set by cosine similarity</span></div>
-          <div style="font-size:14px;color:var(--muted);line-height:1.7">After BFS expansion, all candidate chunks — seeds and neighbours — are re-ranked against the original query. This ensures that irrelevant BFS-expanded chunks don't crowd out the most relevant seed nodes in the final context window.</div>
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">Hop</div>
+          <div style="font-size:14px;color:var(--muted);line-height:1.7">One step through an edge during graph traversal. A 1-hop query follows a single edge (direct relationship). A 3-hop query follows three edges in sequence, crossing three entity boundaries. Enterprise questions commonly require 3–5 hops. The depth of traversal is the main way to control cost vs. completeness.</div>
         </div>
+
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
-          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">NetworkX</div>
-          <div style="font-size:14px;color:var(--muted);line-height:1.7">This app uses the <code style="background:var(--bg);padding:1px 6px;border-radius:4px;font-size:13px">networkx</code> Python library to build and traverse the sequential document graph. The global variable <code style="background:var(--bg);padding:1px 6px;border-radius:4px;font-size:13px">G</code> holds the graph, rebuilt on every upload via <code style="background:var(--bg);padding:1px 6px;border-radius:4px;font-size:13px">rebuild_indexes()</code>.</div>
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">Entity Extraction</div>
+          <div style="font-size:14px;color:var(--muted);line-height:1.7">The process of reading documents with an LLM and identifying all entities and relationships within them. This is where Graph RAG's quality is determined. A good extraction prompt is domain-specific — it tells the LLM what types of entities matter (e.g., "people", "teams", "CVEs") and what relationships to look for. Poor prompt design here causes the entire graph to be incomplete or incorrect.</div>
         </div>
+
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">Community Detection</div>
+          <div style="font-size:14px;color:var(--muted);line-height:1.7">An algorithm (such as Louvain or Leiden) that groups densely connected nodes into <strong style="color:var(--text)">communities</strong>. All nodes in a community tend to be about the same topic. Summaries of each community can be stored as embeddings and retrieved for broad, thematic questions — a "zoomed out" view of the graph. This enables Graph RAG to answer both specific multi-hop questions and general thematic questions.</div>
+        </div>
+
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">Graph DB vs. Vector DB <span style="font-size:11px;font-weight:600;color:var(--purple);background:#4c1d9522;padding:2px 8px;border-radius:999px;margin-left:6px">Graph RAG uses both</span></div>
+          <div style="font-size:14px;color:var(--muted);line-height:1.7">A <strong style="color:var(--text)">graph database</strong> (Neo4j, ArangoDB, Neptune) stores nodes and edges and is optimised for traversal queries: "find all entities reachable from node X within 3 hops." A <strong style="color:var(--text)">vector database</strong> (Pinecone, Chroma, Weaviate) stores embeddings and is optimised for similarity search: "find entities semantically close to this query." Graph RAG needs both — graph DB for structural traversal, vector DB for the semantic entry point into the graph.</div>
+        </div>
+
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">This App's Implementation <span style="font-size:11px;font-weight:600;color:var(--amber);background:#78350f22;padding:2px 8px;border-radius:999px;margin-left:6px">Simplified Sequential Graph</span></div>
+          <div style="font-size:14px;color:var(--muted);line-height:1.7">The Graph RAG endpoint in this app uses a simplified approach to demonstrate the graph traversal concept without requiring a graph database. Document chunks become nodes, and edges connect each chunk to its sequential neighbours (the chunk before and after it in the document). A seed retrieval via vector search finds the most relevant chunk, then <strong style="color:var(--text)">BFS (Breadth-First Search)</strong> expands to neighbouring chunks to collect surrounding context. This is built with <code style="background:var(--bg);padding:1px 6px;border-radius:4px;font-size:13px">networkx</code> in Python. In production, you would replace this with entity extraction → Neo4j/ArangoDB → relationship-aware traversal.</div>
+        </div>
+
       </div>
     </div>
 
     <!-- Try it -->
     <div style="border-top:1px solid var(--border);padding-top:28px">
       <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--blue);margin-bottom:6px">Try It</div>
-      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Upload a PDF or TXT document first, then ask a question that requires understanding context across multiple adjacent passages. The result shows which nodes were seed nodes and which were BFS-expanded.</p>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:4px">Upload a TXT document and ask a question. The app's Graph RAG uses a <strong style="color:var(--text)">sequential chunk graph + BFS expansion</strong> — a simplified demonstration of graph traversal concepts. The result shows which chunks were seed nodes (found by vector search) and which were BFS-expanded neighbours.</p>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">For best results, use the provided <strong style="color:var(--text)">graph_rag_pass.txt</strong> sample document — it has multiple connected sections where BFS expansion adds real context. Compare with <strong style="color:var(--text)">graph_rag_fail.txt</strong> to see when graph traversal adds little value.</p>
 
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius)">
         <label style="display:inline-flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font:600 13px inherit;padding:7px 14px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'">
@@ -133,15 +303,15 @@
         <span id="graph-upload-status" style="font-size:13px;color:var(--muted)">No document loaded</span>
       </div>
 
-      <div style="font-size:17px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">User Prompt / Query</div>
-      <textarea id="graph-query" placeholder="e.g. How are the main concepts connected to each other?" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:14px;font-family:inherit;line-height:1.8;resize:vertical;min-height:72px;outline:none;transition:border-color .15s;box-sizing:border-box" onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+      <div style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">User Prompt / Query</div>
+      <textarea id="graph-query" placeholder="e.g. Which teams and employees are affected by the security vulnerability?" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:14px;font-family:inherit;line-height:1.8;resize:vertical;min-height:72px;outline:none;transition:border-color .15s;box-sizing:border-box" onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--border)'"></textarea>
 
       <button onclick="runGraphRAG()" style="margin-top:10px;padding:10px 24px;background:var(--blue);border:none;border-radius:8px;color:#fff;font:600 14px inherit;cursor:pointer;transition:opacity .15s" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
         Run Graph RAG
       </button>
 
       <div id="graph-result" style="display:none;margin-top:16px">
-        <div style="font-size:17px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Response</div>
+        <div style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Response</div>
         <div id="graph-answer" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;font-size:14px;color:var(--text);line-height:1.8;white-space:pre-wrap"></div>
         <div id="graph-nodes" style="margin-top:10px"></div>
       </div>

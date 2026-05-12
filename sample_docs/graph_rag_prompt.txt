@@ -1,0 +1,59 @@
+Which teams and employees need to act on the critical security vulnerability, and what projects are at risk?
+
+---
+
+HOW TO USE THIS PROMPT
+-----------------------
+Use this exact question with graph_rag_pass.txt and graph_rag_fail.txt to compare Graph RAG behaviour in the app. Then read the multi-document section below to understand what true Graph RAG would do with all four documents together.
+
+
+SCENARIO A — PASS (graph_rag_pass.txt)
+----------------------------------------
+Upload graph_rag_pass.txt and ask the question.
+
+The answer should be complete and accurate. The document is structured as sequential sections — vulnerability background, affected teams, affected projects, personnel required to act — each flowing into the next. The app's Graph RAG seeds on the section most relevant to the query (likely "Personnel Required to Act" or "Affected Teams"), then uses BFS to expand into the adjacent sections that provide supporting context. This gives the LLM a multi-section view of the answer rather than a single isolated chunk.
+
+Compare this with Naive RAG on the same document: Naive RAG retrieves the top-K chunks by similarity. If the similarity peaks on the "Personnel" section, it will return that section and miss the "Projects at Risk" section (which is two chunks away). Graph RAG's BFS bridges that gap.
+
+
+SCENARIO B — FAIL / DIMINISHED VALUE (graph_rag_fail.txt)
+-----------------------------------------------------------
+Upload graph_rag_fail.txt and ask the question.
+
+The answer will still be correct, but Graph RAG adds almost no value here. The document is a FAQ — each Q&A pair is a self-contained chunk. The answer to the question sits cleanly in two adjacent FAQ entries ("Who needs to act?" and "Which projects are affected?"). Any RAG strategy — Naive, Advanced, or Graph — retrieves those chunks easily.
+
+What Graph RAG's BFS expansion does here: it pulls in neighbouring Q&A pairs that are unrelated to the question (e.g., "How long will the upgrade take?", "What is the upgrade command?"). These are irrelevant and add noise rather than context. The re-scoring step partially corrects this, but you end up with no meaningful improvement over Naive RAG.
+
+This demonstrates Graph RAG's core limitation with self-contained documents: BFS neighbours are not always contextually related. Sequential adjacency in a FAQ does not equal semantic relatedness.
+
+
+MULTI-DOCUMENT SCENARIO — TRUE GRAPH RAG (4 documents)
+---------------------------------------------------------
+This is what Graph RAG is actually designed for. In a real production system with a knowledge graph, you would load all four documents simultaneously:
+
+  graph_rag_doc1_teams.txt      — Who is on which team, who manages whom
+  graph_rag_doc2_tech_stack.txt — Which team uses which technologies
+  graph_rag_doc3_projects.txt   — Which projects use which technologies
+  graph_rag_doc4_security.txt   — Which technologies have CVEs
+
+A true Graph RAG system would extract the following entities and relationships:
+
+  [CVE-2024-7891] --affects--> [Kubernetes v1.28]
+  [Platform Team] --uses--> [Kubernetes v1.28]
+  [AI Research Team] --uses--> [Kubernetes v1.28]
+  [Alex Kumar] --member_of--> [Platform Team]
+  [Priya Patel] --member_of--> [Platform Team]
+  [Sarah Chen] --manages--> [Platform Team]
+  [Elena Vasquez] --member_of--> [AI Research Team]
+  [Dr. Amit Shah] --manages--> [AI Research Team]
+  [Project Nova] --uses--> [Kubernetes v1.28]
+  [Project Atlas] --uses--> [Kubernetes v1.28]
+  [Project Meridian] --uses--> [Kubernetes v1.28]
+
+To answer "Which employees need to act?", the system traverses:
+  CVE-2024-7891 → Kubernetes → Platform Team → all members (4 people)
+  CVE-2024-7891 → Kubernetes → AI Research Team → all members (3 people)
+
+This answer could not be assembled from any single chunk across the four documents. Each link in the chain lives in a different file. Only the knowledge graph — by stitching entities across documents — can resolve this reliably.
+
+NOTE: This app's demo uploads one document at a time, so the 4-doc scenario cannot be run directly. The four documents are provided as educational samples to illustrate the multi-document scenario that true Graph RAG enables.

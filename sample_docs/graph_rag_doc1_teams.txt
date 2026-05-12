@@ -1,0 +1,41 @@
+NEXUS CORP — TEAM DIRECTORY
+===========================
+
+This document contains the official team structure and membership roster for Nexus Corp as of Q1 2025. It is maintained by HR and updated quarterly.
+
+PLATFORM TEAM
+-------------
+Manager:  Sarah Chen (VP of Infrastructure)
+Deputy:   Alex Kumar (Senior Engineer)
+Members:
+  - Alex Kumar       | Senior Engineer       | Joined 2021
+  - Priya Patel      | Infrastructure Lead   | Joined 2020
+  - James Wilson     | DevOps Engineer       | Joined 2022
+  - Rachel Moore     | Site Reliability Eng  | Joined 2023
+
+Responsibility: Manages all cloud infrastructure, container orchestration, and internal developer tooling across the organisation.
+
+AI RESEARCH TEAM
+----------------
+Manager:  Dr. Amit Shah (Head of AI Research)
+Members:
+  - Elena Vasquez    | ML Engineer           | Joined 2021
+  - Chris Park       | Research Scientist    | Joined 2022
+  - Aisha Nkosi      | Data Engineer         | Joined 2023
+
+Responsibility: Develops and trains machine learning models, manages compute infrastructure for training workloads, and produces research reports for product integration.
+
+SECURITY TEAM
+-------------
+Manager:  Marcus Rodriguez (Chief Security Officer)
+Members:
+  - Nina Okafor      | Security Analyst      | Joined 2020
+  - Tom Brennan      | Penetration Tester    | Joined 2021
+  - Lisa Zhang       | Compliance Officer    | Joined 2022
+
+Responsibility: Manages vulnerability assessment, security monitoring, compliance auditing, and incident response across all engineering systems.
+
+REPORTING STRUCTURE
+-------------------
+All team managers report directly to the CTO.
+Security Team has override authority on any team's technology decisions for compliance purposes.
