@@ -37,7 +37,7 @@
         </div>
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
           <div style="font-size:13px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Step 2 — Indexing</div>
-          <div style="font-size:14px;color:var(--muted);line-height:1.75">Each chunk is encoded into a single embedding vector representing its full content. These vectors are appended to a flat NumPy matrix (<code style="background:var(--bg);padding:1px 6px;border-radius:4px;font-size:13px">DOC_EMBS</code>) — this matrix <em>is</em> the index. Only the vector and the raw text are stored alongside each entry; no additional signals, weights, or positional information.</div>
+          <div style="font-size:14px;color:var(--muted);line-height:1.75">Each chunk is encoded into a single embedding vector representing its full content. These vectors are appended to a flat NumPy matrix (<code style="background:var(--bg);padding:1px 6px;border-radius:4px;font-size:13px">DOC_EMBS</code>) — this matrix <em>is</em> the index. Only the vector and the raw text are stored alongside each entry; no additional signals, weights, or positional information.<br><br>In this app the index lives in memory and is lost on restart. In production Naive RAG the same vectors would be written to a dedicated <strong style="color:var(--text)">vector database</strong> — such as <strong style="color:var(--text)">Pinecone</strong>, <strong style="color:var(--text)">Chroma</strong>, <strong style="color:var(--text)">FAISS</strong>, or <strong style="color:var(--text)">Weaviate</strong> — which adds persistence, scalability, and fast approximate nearest-neighbour (ANN) search without scanning every vector.</div>
         </div>
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
           <div style="font-size:13px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Step 3 — Query &amp; Retrieval</div>
@@ -211,7 +211,8 @@
         <span id="naive-upload-status" style="font-size:13px;color:var(--muted)">No document loaded</span>
       </div>
 
-      <textarea id="naive-query" placeholder="e.g. What is the main topic of this document?" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font:14px inherit;resize:vertical;min-height:72px;outline:none;transition:border-color .15s;box-sizing:border-box" onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+      <div style="font-size:17px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">User Prompt / Query</div>
+      <textarea id="naive-query" placeholder="e.g. What is the main topic of this document?" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:14px;font-family:inherit;line-height:1.8;resize:vertical;min-height:72px;outline:none;transition:border-color .15s;box-sizing:border-box" onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--border)'"></textarea>
 
       <button onclick="runNaiveRAG()" style="margin-top:10px;padding:10px 24px;background:var(--blue);border:none;border-radius:8px;color:#fff;font:600 14px inherit;cursor:pointer;transition:opacity .15s" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
         Run Naive RAG

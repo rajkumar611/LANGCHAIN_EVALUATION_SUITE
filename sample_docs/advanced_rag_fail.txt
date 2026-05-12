@@ -1,0 +1,54 @@
+ACME CORP — ANNUAL TECHNOLOGY PORTFOLIO REVIEW
+===============================================
+
+SECTION 1 — PORTFOLIO OVERVIEW
+--------------------------------
+This document covers the full technology project portfolio for the fiscal year. Seven initiatives were active at the start of the year. The portfolio spans infrastructure, product, and data domains. Each initiative is reviewed quarterly by the Technology Steering Committee.
+
+The company invested significantly in modernisation this year, with a focus on data infrastructure, customer-facing tooling, and internal process automation. Overall portfolio health was rated satisfactory at mid-year review.
+
+SECTION 2 — PROJECT ATLAS: INITIATION
+---------------------------------------
+Project Atlas was formally initiated in Q1 following a board-approved mandate to replace the legacy data warehouse. The initiative was assigned a budget of $900,000 and a 12-month delivery timeline. A third-party vendor was selected through competitive tender to deliver the core integration layer.
+
+Initial onboarding costs for the vendor engagement totalled $620,000, paid upfront as per the contract terms. Internal staffing was allocated from the data engineering and infrastructure teams.
+
+SECTION 3 — PROJECT BEACON: STATUS UPDATE
+-------------------------------------------
+Project Beacon, the customer portal redesign, completed its second milestone on schedule. User acceptance testing returned a satisfaction score of 87%, above the 80% target. The project remains on budget and is tracking for delivery in Q4. No escalations or blockers were reported during the review period.
+
+SECTION 4 — PROJECT ATLAS: MID-YEAR REVIEW
+--------------------------------------------
+By Q2, concerns emerged around vendor delivery. The integration module, due in Month 4, had not been submitted for testing. Two formal notices were issued to the vendor. Internal staff costs at this point had accumulated to $280,000 as the data engineering team continued preparatory work in anticipation of vendor delivery.
+
+The Technology Steering Committee placed the initiative on amber status and assigned a consulting firm to assess vendor progress and manage remediation.
+
+SECTION 5 — PROJECT CIPHER: COMPLETION
+----------------------------------------
+Project Cipher, the internal security audit tooling, was completed successfully in Q2. All deliverables were signed off by the CISO. The project came in $12,000 under budget. Learnings from Cipher have been incorporated into the updated vendor management framework.
+
+SECTION 6 — PROJECT ATLAS: CONSULTING ENGAGEMENT
+--------------------------------------------------
+The consulting firm engaged to manage vendor remediation submitted their final assessment in Q3. Their conclusion was that the vendor could not deliver the integration module within an acceptable revised timeline. Consulting fees for this engagement totalled $240,000.
+
+Separately, the internal team continued to incur costs through Q3, bringing total internal staff costs to $480,000 by the time the closure decision was made.
+
+SECTION 7 — PROJECT DELTA: INFRASTRUCTURE UPGRADE
+---------------------------------------------------
+Project Delta completed its first phase of cloud migration in Q3. Forty percent of core services were successfully migrated to the managed Kubernetes environment. The migration reduced infrastructure operating costs by 12% on an annualised basis. Phase two is scheduled to begin in Q1 of the following fiscal year.
+
+SECTION 8 — PROJECT ATLAS: CLOSURE DECISION
+---------------------------------------------
+Following the consulting firm's assessment, senior leadership convened an extraordinary review. The board voted unanimously to discontinue Project Atlas. Contributing factors cited in the closure memo included vendor non-delivery, a company-wide restructuring that shifted internal resource priorities, and a revised technology strategy that rendered the original scope redundant.
+
+The formal discontinuation was recorded in Q3. All vendor contracts were terminated. No further costs are expected.
+
+SECTION 9 — FINANCIAL RECONCILIATION
+--------------------------------------
+The finance team completed a full reconciliation of all portfolio spend at year end. Across all seven initiatives, total spend was $4,200,000 against a combined approved budget of $3,950,000, representing a portfolio-level overrun of $250,000.
+
+Project Atlas accounted for the entirety of the overrun. Its total spend of $1,340,000 exceeded the approved budget of $900,000 by $440,000. All Atlas expenditure is classified as unrecoverable following the closure decision.
+
+SECTION 10 — PORTFOLIO OUTLOOK
+--------------------------------
+For the coming fiscal year, the Technology Steering Committee has approved six new initiatives. Vendor management controls have been updated to require milestone-based payment structures for all contracts above $200,000. Project Atlas has been formally closed in the portfolio register.

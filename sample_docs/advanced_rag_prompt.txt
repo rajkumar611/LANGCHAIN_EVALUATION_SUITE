@@ -1,0 +1,15 @@
+What led to the project being cancelled, and what was the total financial loss?
+
+---
+
+HOW TO USE THIS PROMPT
+-----------------------
+Use this exact question with both advanced_rag_pass.txt and advanced_rag_fail.txt to compare Advanced RAG behaviour.
+
+Upload advanced_rag_pass.txt first and ask the question.
+The answer should be complete and accurate. The document uses formal vocabulary — "discontinued", "unrecovered capital expenditure", "budget variance" — which differs from the everyday words in the query ("cancelled", "financial loss"). Advanced RAG rewrites the query internally to bridge this vocabulary gap, finds the right section, and answers correctly. Naive RAG would likely struggle here because its embedding search scores low when the user's words do not closely match the document's words.
+
+Then upload advanced_rag_fail.txt and ask the same question.
+The answer will likely be incomplete. The reasons for cancellation are spread across five sections (Section 2, 4, 6, 8, and the closure memo), and the financial figures are split across Section 2 ($620,000 vendor fee), Section 4 and 6 ($480,000 staff, $240,000 consulting), and Section 9 (final reconciliation). Advanced RAG rewrites the query and retrieves the best-matching chunks — likely Section 8 (closure decision) and Section 9 (financial reconciliation) — but misses the earlier sections that explain the chain of events leading to cancellation. The answer will feel partially right but will lack the full causal picture.
+
+This demonstrates Advanced RAG's core limitation: query rewriting and re-ranking improve retrieval quality, but they still score chunks individually. When the full answer requires chaining many chunks in sequence across a long document, the pipeline retrieves the most relevant-looking pieces and misses the connective tissue between them.
