@@ -24,36 +24,29 @@
 
 <!-- ══ SIDEBAR ══ -->
 <aside class="sidebar">
-  <div class="sidebar-logo">
-    <div class="sidebar-logo-text">Navigation</div>
-  </div>
-
   <div class="sidebar-section-label">Overview</div>
   <button class="toc-link active" id="toc-home" onclick="showHome()">
     <span class="toc-dot"></span> Home
   </button>
 
-  <div class="sidebar-section-label">Retrieval</div>
-  <button class="toc-link" id="toc-rag" onclick="showRAG()">
-    <span class="toc-dot"></span> RAG Strategies
+  <div class="sidebar-section-label">RAG Strategies</div>
+  <button class="toc-link" id="toc-naive" onclick="showNaiveRAG()">
+    <span class="toc-dot"></span> Naive RAG
   </button>
-  <button class="toc-link toc-sub" id="toc-naive" onclick="showNaiveRAG()">
-    <span class="toc-dot" style="width:4px;height:4px"></span> Naive RAG
+  <button class="toc-link" id="toc-advanced" onclick="showAdvancedRAG()">
+    <span class="toc-dot"></span> Advanced RAG
   </button>
-  <button class="toc-link toc-sub" id="toc-advanced" onclick="showAdvancedRAG()">
-    <span class="toc-dot" style="width:4px;height:4px"></span> Advanced RAG
+  <button class="toc-link" id="toc-agentic" onclick="showAgenticRAG()">
+    <span class="toc-dot"></span> Agentic RAG
   </button>
-  <button class="toc-link toc-sub" id="toc-agentic" onclick="showAgenticRAG()">
-    <span class="toc-dot" style="width:4px;height:4px"></span> Agentic RAG
+  <button class="toc-link" id="toc-hybrid" onclick="showHybridRAG()">
+    <span class="toc-dot"></span> Hybrid RAG
   </button>
-  <button class="toc-link toc-sub" id="toc-hybrid" onclick="showHybridRAG()">
-    <span class="toc-dot" style="width:4px;height:4px"></span> Hybrid RAG
+  <button class="toc-link" id="toc-graph" onclick="showGraphRAG()">
+    <span class="toc-dot"></span> Graph RAG
   </button>
-  <button class="toc-link toc-sub" id="toc-graph" onclick="showGraphRAG()">
-    <span class="toc-dot" style="width:4px;height:4px"></span> Graph RAG
-  </button>
-  <button class="toc-link toc-sub" id="toc-summary" onclick="showSummary()">
-    <span class="toc-dot" style="width:4px;height:4px"></span> Summary
+  <button class="toc-link" id="toc-summary" onclick="showSummary()">
+    <span class="toc-dot"></span> Summary
   </button>
   <button class="toc-link" id="toc-eval" onclick="showEval()">
     <span class="toc-dot"></span> RAG Evaluation
