@@ -1,53 +1,50 @@
 <div style="flex:1;overflow-y:auto;width:100%">
   <div style="padding:40px 48px 56px;width:100%;box-sizing:border-box">
 
+    <!-- Page title — matches strategy page header style -->
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+      <span style="background:#1e3a5f;color:var(--blue);font-size:20px;font-weight:700;padding:4px 12px;border-radius:999px;letter-spacing:.05em">OVERVIEW</span>
+      <span style="font-size:28px;font-weight:800;letter-spacing:-0.4px;color:var(--text)">RAG Evaluation Suite</span>
+    </div>
+    <p style="font-size:17px;color:var(--muted);line-height:1.8;margin-bottom:40px">
+      An interactive platform for exploring five RAG strategies and LLM-based evaluation — all backed by a live FastAPI backend.
+    </p>
+
     <!-- RAG acronym breakdown + without/with comparison -->
     <div style="margin-bottom:40px">
-      <div style="font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--blue);margin-bottom:12px">What is RAG?</div>
-      <p style="font-size:13px;color:var(--muted);line-height:1.85;margin:0 0 16px">RAG stands for <strong style="color:var(--text)">Retrieval-Augmented Generation</strong>:</p>
-      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px">
+      <div style="font-size:17px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px">What is RAG?</div>
+      <p style="font-size:16px;color:var(--muted);line-height:1.85;margin:0 0 18px">RAG stands for <strong style="color:var(--text)">Retrieval-Augmented Generation</strong>:</p>
+      <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:26px">
         <div style="display:flex;align-items:flex-start;gap:12px">
-          <span style="background:var(--blue);color:#fff;border-radius:5px;font-size:11px;font-weight:700;padding:3px 9px;white-space:nowrap;margin-top:1px">Retrieve</span>
-          <span style="font-size:13px;color:var(--muted);line-height:1.7">Find relevant information from your knowledge base</span>
+          <span style="background:var(--blue);color:#fff;border-radius:5px;font-size:12px;font-weight:700;padding:3px 10px;white-space:nowrap;margin-top:2px">Retrieve</span>
+          <span style="font-size:16px;color:var(--muted);line-height:1.7">Find relevant information from your knowledge base</span>
         </div>
         <div style="display:flex;align-items:flex-start;gap:12px">
-          <span style="background:var(--purple);color:#fff;border-radius:5px;font-size:11px;font-weight:700;padding:3px 9px;white-space:nowrap;margin-top:1px">Augment</span>
-          <span style="font-size:13px;color:var(--muted);line-height:1.7">Feed that information to an AI model</span>
+          <span style="background:var(--purple);color:#fff;border-radius:5px;font-size:12px;font-weight:700;padding:3px 10px;white-space:nowrap;margin-top:2px">Augment</span>
+          <span style="font-size:16px;color:var(--muted);line-height:1.7">Feed that information to an AI model</span>
         </div>
         <div style="display:flex;align-items:flex-start;gap:12px">
-          <span style="background:var(--green);color:#fff;border-radius:5px;font-size:11px;font-weight:700;padding:3px 9px;white-space:nowrap;margin-top:1px">Generate</span>
-          <span style="font-size:13px;color:var(--muted);line-height:1.7">AI creates a response using both its training + retrieved knowledge</span>
+          <span style="background:var(--green);color:#fff;border-radius:5px;font-size:12px;font-weight:700;padding:3px 10px;white-space:nowrap;margin-top:2px">Generate</span>
+          <span style="font-size:16px;color:var(--muted);line-height:1.7">AI creates a response using both its training + retrieved knowledge</span>
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px">
           <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Without RAG</div>
-          <div style="font-size:13px;color:var(--text);font-style:italic;margin-bottom:8px">"What's the latest on AI?"</div>
-          <div style="font-size:13px;color:var(--muted);line-height:1.7">→ AI uses only training data <span style="color:#f59e0b;font-weight:600">(may be outdated)</span></div>
+          <div style="font-size:15px;color:var(--text);font-style:italic;margin-bottom:8px">"What's the latest on AI?"</div>
+          <div style="font-size:15px;color:var(--muted);line-height:1.7">→ AI uses only training data <span style="color:#f59e0b;font-weight:600">(may be outdated)</span></div>
         </div>
         <div style="background:var(--surface);border:1px solid var(--green);border-radius:var(--radius);padding:18px 20px">
           <div style="font-size:12px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">With RAG</div>
-          <div style="font-size:13px;color:var(--text);font-style:italic;margin-bottom:8px">"What's the latest on AI?"</div>
-          <div style="font-size:13px;color:var(--muted);line-height:1.7">→ AI retrieves current documents → Uses them to generate a <strong style="color:var(--text)">fresh, accurate answer</strong></div>
+          <div style="font-size:15px;color:var(--text);font-style:italic;margin-bottom:8px">"What's the latest on AI?"</div>
+          <div style="font-size:15px;color:var(--muted);line-height:1.7">→ AI retrieves current documents → Uses them to generate a <strong style="color:var(--text)">fresh, accurate answer</strong></div>
         </div>
       </div>
     </div>
 
-    <!-- What is RAG -->
-    <div style="margin-bottom:36px">
-      <div style="font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--blue);margin-bottom:12px">What is RAG?</div>
-      <h2 style="font-size:30px;font-weight:800;letter-spacing:-0.3px;color:var(--text);margin-bottom:16px">Retrieval-Augmented Generation</h2>
-      <p style="font-size:13px;color:var(--muted);line-height:1.85;margin:0 0 14px">
-        RAG is a technique that improves the accuracy of AI-generated answers by giving the model access to relevant information at the time of answering. Instead of relying purely on what was learned during training, the system first <strong style="color:var(--text)">retrieves</strong> the most relevant chunks from a document or knowledge base, then <strong style="color:var(--text)">augments</strong> the prompt with that context before asking the model to <strong style="color:var(--text)">generate</strong> a response.
-      </p>
-      <p style="font-size:13px;color:var(--muted);line-height:1.85;margin:0">
-        This makes RAG especially useful when you need answers grounded in specific documents — internal reports, product manuals, research papers — rather than general world knowledge. The model does not need to be retrained; you simply change what gets retrieved.
-      </p>
-    </div>
-
     <!-- How it works -->
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px 24px;margin-bottom:36px">
-      <div style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:16px">How it works — the core pipeline</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px 24px;margin-bottom:40px">
+      <div style="font-size:17px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:16px">How it works — the core pipeline</div>
       <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px">
         <div style="background:var(--bg);border:1px solid var(--blue);color:var(--blue);border-radius:6px;padding:9px 16px;font-size:13px;font-weight:600">User Question</div>
         <span style="color:var(--muted);font-size:14px">→</span>
@@ -64,17 +61,17 @@
     </div>
 
     <!-- Who decides -->
-    <div style="margin-bottom:32px">
-      <div style="font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--blue);margin-bottom:12px">Who Decides Which RAG Strategy to Use?</div>
-      <p style="font-size:13px;color:var(--muted);line-height:1.85;margin:0">
+    <div style="margin-bottom:36px">
+      <div style="font-size:17px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--blue);margin-bottom:14px">Who Decides Which RAG Strategy to Use?</div>
+      <p style="font-size:16px;color:var(--muted);line-height:1.85;margin:0">
         The developer who builds the RAG system decides which strategy to use. When a developer writes the code, they choose every step — how to chunk, how to embed, how to retrieve. This is done through code or configuration files, not through chat commands. If a company uses a platform like Azure or AWS, their technical team sets it through platform settings. If you are an end user of a finished product like a chatbot, the decision was already made for you before you even opened the application. <strong style="color:var(--text)">You as an end user have no control over it — the pipeline is fixed at build time, not at runtime.</strong>
       </p>
     </div>
 
     <!-- Strategies not rigid -->
-    <div style="margin-bottom:40px">
-      <div style="font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--purple);margin-bottom:12px">Strategies Are Not Rigid Boxes</div>
-      <p style="font-size:13px;color:var(--muted);line-height:1.85;margin:0">
+    <div style="margin-bottom:44px">
+      <div style="font-size:17px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--purple);margin-bottom:14px">Strategies Are Not Rigid Boxes</div>
+      <p style="font-size:16px;color:var(--muted);line-height:1.85;margin:0">
         Importantly, it is not always one pure strategy. A developer can mix techniques from both. For example, a system might use fixed-size chunking from Naive RAG, but add hybrid search and re-ranking from Advanced RAG. Another system might use semantic chunking and multiple vectors, but skip post-retrieval compression to keep response times fast. <strong style="color:var(--text)">Naive RAG and Advanced RAG are not two rigid boxes — they are a collection of individual techniques</strong>, and developers pick and combine them based on their specific needs, budget, and performance requirements.
       </p>
     </div>
@@ -86,9 +83,6 @@
       </button>
       <button onclick="showEval()" style="display:inline-flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font:600 15px inherit;padding:10px 20px;cursor:pointer;transition:border-color .15s;margin-top:20px" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'">
         Try RAG Evaluation
-      </button>
-      <button onclick="showLangchain()" style="display:inline-flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font:600 15px inherit;padding:10px 20px;cursor:pointer;transition:border-color .15s;margin-top:20px" onmouseover="this.style.borderColor='var(--purple)'" onmouseout="this.style.borderColor='var(--border)'">
-        LangChain Patterns
       </button>
     </div>
 
