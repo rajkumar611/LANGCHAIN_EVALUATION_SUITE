@@ -1,6 +1,6 @@
 # RAG Evaluation Suite
 
-An interactive FastAPI application demonstrating **5 RAG retrieval strategies** and **LLM-based RAG evaluation** — built to production-grade standards with a multi-page guided frontend.
+An interactive FastAPI application demonstrating **5 RAG retrieval strategies** and **LLM-based RAG evaluation** — built to production-grade standards with a multi-page guided frontend, step-by-step pipeline walkthroughs, and purpose-built sample documents for each strategy.
 
 ![CI](https://github.com/your-username/RAG_EVALUATION_SUITE/actions/workflows/ci.yml/badge.svg)
 
@@ -12,7 +12,7 @@ Most RAG demos are toy examples. This project shows:
 - **Retrieval depth** — five strategies from naive to graph-based, each with visible pipeline steps
 - **Pass / Fail sample documents** — purpose-built documents that demonstrate exactly where each strategy succeeds and where it breaks down
 - **Evaluation** — LLM-as-Judge scoring across Faithfulness, Answer Relevancy, Context Utilization, and optional Correctness
-- **Production rigour** — typed config, structured logging, input validation, 35 tests, CI pipeline, Docker support
+- **Production rigour** — typed config, structured logging, input validation, 53 tests, CI pipeline, Docker support
 
 ---
 
@@ -83,7 +83,7 @@ Purpose-built pass / fail document pairs for each strategy. Each set includes a 
 | Naive RAG | `naive_rag_pass.txt` | `naive_rag_fail.txt` | Fail: answer split across distant sections |
 | Advanced RAG | `advanced_rag_pass.txt` | `advanced_rag_fail.txt` | Fail: causal chain spread across 5+ sections |
 | Agentic RAG | `agentic_rag_pass.txt` | `agentic_rag_fail.txt` | Fail: two similar events create conflicting context |
-| Hybrid RAG | — | — | Use any of the above |
+| Hybrid RAG | `hybrid_rag_pass.txt` | `hybrid_rag_fail.txt` | Pass: exact error code + conceptual query (BM25 + vector both needed) |
 | Graph RAG | `graph_rag_pass.txt` | `graph_rag_fail.txt` | Also includes 4-document multi-hop scenario |
 
 General purpose documents (`doc1_ai_research_report.txt`, `doc2_product_operations_manual.txt`) work across all strategies.
@@ -129,8 +129,9 @@ python -m pytest tests/ -v
 Tests run fully offline — all LLM calls are mocked. No API key required.
 
 ```
-tests/test_rag_utils.py      # Unit tests: chunk_text, vector_search, bm25_search, reciprocal_rank_fusion
-tests/test_rag_endpoints.py  # Integration tests: /upload, /rag/naive, /rag/hybrid, /rag/evaluate
+tests/test_rag_utils.py      # 16 unit tests: chunk_text, vector_search, bm25_search, reciprocal_rank_fusion
+tests/test_rag_endpoints.py  # 37 integration tests: /upload, /rag/naive, /rag/advanced, /rag/agentic,
+                             #                       /rag/hybrid, /rag/graph, /rag/evaluate
 ```
 
 ---
@@ -170,6 +171,7 @@ tests/test_rag_endpoints.py  # Integration tests: /upload, /rag/naive, /rag/hybr
 ├── sample_docs/
 │   ├── naive_rag_pass.txt / _fail.txt / _prompt.txt
 │   ├── advanced_rag_pass.txt / _fail.txt / _prompt.txt
+│   ├── hybrid_rag_pass.txt / _fail.txt / _prompt.txt
 │   ├── agentic_rag_pass.txt / _fail.txt / _prompt.txt
 │   ├── graph_rag_pass.txt / _fail.txt / _prompt.txt
 │   ├── graph_rag_doc1_teams.txt        # Multi-document Graph RAG scenario
@@ -221,7 +223,7 @@ Full interactive docs: `http://localhost:8080/docs`
 | API | FastAPI + Uvicorn |
 | LLM | Anthropic Claude (`claude-sonnet-4-6`) |
 | Embeddings | `sentence-transformers/all-MiniLM-L6-v2` |
-| Dense Search | FAISS |
+| Dense Search | NumPy dot product (FAISS used in LangChain demo only) |
 | Sparse Search | TF-IDF / BM25 (scikit-learn) |
 | Graph | NetworkX |
 | Config | Pydantic Settings |

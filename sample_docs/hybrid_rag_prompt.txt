@@ -1,0 +1,47 @@
+What does error ERR-301 mean, and how does it relate to data consistency guarantees in DataSync Pro?
+
+---
+
+HOW TO USE THIS PROMPT
+-----------------------
+Use this exact question with both hybrid_rag_pass.txt and hybrid_rag_fail.txt to compare Hybrid RAG behaviour.
+
+
+SCENARIO A — PASS (hybrid_rag_pass.txt)
+----------------------------------------
+Upload hybrid_rag_pass.txt and ask the question.
+
+The answer should be complete and accurate — combining an exact-match result with a semantic result.
+
+BM25 path: The query contains the exact string "ERR-301". BM25 scores the ERR-301 error entry very highly because the term appears verbatim. This retrieves the error definition, its severity (Critical), and its resolution steps.
+
+Dense (vector) path: The phrase "data consistency guarantees" is conceptual — it does not appear verbatim next to ERR-301. The vector search retrieves the "CORE CONCEPTS — DATA CONSISTENCY" section, which explains write atomicity, the two-phase commit protocol, and the condition that ERR-301 is designed to detect and report.
+
+After RRF fusion, both chunks appear in the top results. The LLM can now answer both parts: what ERR-301 means (from the BM25 result) and how it connects to data consistency (from the vector result). Neither retriever alone could have assembled this answer. BM25 finds the error entry but has no semantic link to the data consistency section. Vector search finds the conceptual section but would not reliably score the ERR-301 entry highly because the error catalogue uses technical, non-narrative phrasing that does not embed close to "data consistency guarantees."
+
+This is Hybrid RAG's core strength: the same query exercises both retrievers for different sub-parts of the answer, and RRF fusion brings both results together.
+
+
+SCENARIO B — FAIL / INCOMPLETE (hybrid_rag_fail.txt)
+------------------------------------------------------
+Upload hybrid_rag_fail.txt and ask the same question.
+
+No meaningful answer is possible because hybrid_rag_fail.txt does not contain this information — it is a completely different document (Meridian Cloud platform compendium). The Hybrid RAG endpoint will retrieve the most similar chunks from that document, but they will be about unrelated topics (node consensus, cache storms, TLS rotation) and the LLM will correctly indicate that it cannot find relevant information or will produce a low-confidence answer that does not address the question.
+
+This demonstrates a fundamental limitation that Hybrid RAG cannot overcome: neither BM25 nor vector search can retrieve information that does not exist in the corpus. Both retrievers will find the nearest available content, but nearest does not mean correct when the document is off-topic.
+
+Additionally, if you ask the Hybrid RAG a multi-hop question against hybrid_rag_fail.txt — such as "What happens to a PLAT-001 error during a Sunday maintenance window?" — you will observe the second Hybrid RAG limitation: even though PLAT-001 (Section 5) and the maintenance window policy (Section 6) are both present in the document, the question requires understanding that PLAT-001 is a node consensus failure and that rolling restarts not staggered by 45 seconds cause it, then linking that to the maintenance window procedures. Hybrid RAG has no mechanism to chain these inferences. It will retrieve whichever of the two sections scores highest and likely miss the other, producing an incomplete answer. Agentic RAG or Graph RAG would handle this better.
+
+
+WHAT THIS DEMONSTRATES ABOUT HYBRID RAG
+-----------------------------------------
+Hybrid RAG's strength is handling queries that have two different vocabulary profiles — one part that benefits from exact keyword matching (error codes, SKUs, product names, numeric values) and another part that benefits from semantic understanding (conceptual descriptions, process explanations, intent-based questions).
+
+RRF fusion is what makes this work: each retriever independently finds what it is good at, and the fusion step promotes chunks that scored highly on either or both paths. No learning or training is required to combine the signals.
+
+Hybrid RAG's limitations are:
+1. It cannot chain inferences across multiple retrieval steps (no loop or planning layer).
+2. It cannot recover when the answer requires synthesising three or more non-adjacent sections of a document.
+3. It relies on both indexes being populated at upload time — if the keyword index is stale or the embedding model produces poor vectors for a domain, one retrieval path silently underperforms.
+
+For queries mixing exact identifiers with conceptual context — like the ERR-301 question above — Hybrid RAG is the most cost-effective strategy. It costs no more than Naive RAG per query (no extra LLM calls at retrieval time) while delivering significantly better recall on mixed-vocabulary questions.

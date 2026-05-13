@@ -103,6 +103,134 @@ class TestNaiveRag:
         assert resp.status_code == 422
 
 
+# ── /rag/advanced ─────────────────────────────────────────────────────────────
+class TestAdvancedRag:
+    def test_no_docs_returns_guidance(self, client):
+        import src.rag.routes as r
+
+        original = r.DOCS[:]
+        r.DOCS.clear()
+        resp = client.post("/rag/advanced", json={"query": "what is RAG?"})
+        r.DOCS.extend(original)
+        assert resp.status_code == 200
+        assert "No document" in resp.json()["answer"]
+
+    def test_returns_expected_keys(self, uploaded_client):
+        with patch("src.rag.routes.llm", side_effect=_mock_llm):
+            resp = uploaded_client.post("/rag/advanced", json={"query": "what is vector search?"})
+        assert resp.status_code == 200
+        data = resp.json()
+        assert {"answer", "docs", "steps", "rewritten_query"} <= data.keys()
+
+    def test_rewritten_query_is_string(self, uploaded_client):
+        with patch("src.rag.routes.llm", side_effect=_mock_llm):
+            resp = uploaded_client.post("/rag/advanced", json={"query": "explain BM25"})
+        assert isinstance(resp.json()["rewritten_query"], str)
+
+    def test_steps_include_rewrite_and_fusion(self, uploaded_client):
+        with patch("src.rag.routes.llm", side_effect=_mock_llm):
+            resp = uploaded_client.post("/rag/advanced", json={"query": "chunking"})
+        step_names = [s["step"].lower() for s in resp.json()["steps"]]
+        assert any("rewriting" in s or "rewrite" in s for s in step_names)
+        assert any("fusion" in s or "rrf" in s for s in step_names)
+
+    def test_query_too_long_rejected(self, client):
+        resp = client.post("/rag/advanced", json={"query": "x" * 2001})
+        assert resp.status_code == 422
+
+    def test_empty_query_rejected(self, client):
+        resp = client.post("/rag/advanced", json={"query": ""})
+        assert resp.status_code == 422
+
+
+# ── /rag/agentic ──────────────────────────────────────────────────────────────
+class TestAgenticRag:
+    def test_no_docs_returns_guidance(self, client):
+        import src.rag.routes as r
+
+        original = r.DOCS[:]
+        r.DOCS.clear()
+        resp = client.post("/rag/agentic", json={"query": "what is RAG?"})
+        r.DOCS.extend(original)
+        assert resp.status_code == 200
+        assert "No document" in resp.json()["answer"]
+
+    def test_returns_expected_keys(self, uploaded_client):
+        mock_response = _build_agentic_mock_response()
+        with patch("src.rag.routes.client.messages.create", return_value=mock_response):
+            resp = uploaded_client.post("/rag/agentic", json={"query": "what is vector search?"})
+        assert resp.status_code == 200
+        data = resp.json()
+        assert {"answer", "docs", "steps"} <= data.keys()
+
+    def test_answer_is_string(self, uploaded_client):
+        mock_response = _build_agentic_mock_response()
+        with patch("src.rag.routes.client.messages.create", return_value=mock_response):
+            resp = uploaded_client.post("/rag/agentic", json={"query": "explain BM25"})
+        assert isinstance(resp.json()["answer"], str)
+
+    def test_query_too_long_rejected(self, client):
+        resp = client.post("/rag/agentic", json={"query": "x" * 2001})
+        assert resp.status_code == 422
+
+    def test_empty_query_rejected(self, client):
+        resp = client.post("/rag/agentic", json={"query": ""})
+        assert resp.status_code == 422
+
+
+def _build_agentic_mock_response():
+    """Build a minimal mock Anthropic response that triggers end_turn (no tool use)."""
+    from unittest.mock import MagicMock
+
+    block = MagicMock()
+    block.type = "text"
+    block.text = MOCK_ANSWER
+    response = MagicMock()
+    response.stop_reason = "end_turn"
+    response.content = [block]
+    return response
+
+
+# ── /rag/graph ────────────────────────────────────────────────────────────────
+class TestGraphRag:
+    def test_no_docs_returns_guidance(self, client):
+        import src.rag.routes as r
+
+        original = r.DOCS[:]
+        r.DOCS.clear()
+        resp = client.post("/rag/graph", json={"query": "what is RAG?"})
+        r.DOCS.extend(original)
+        assert resp.status_code == 200
+        assert "No document" in resp.json()["answer"]
+
+    def test_returns_expected_keys(self, uploaded_client):
+        with patch("src.rag.routes.llm", side_effect=_mock_llm):
+            resp = uploaded_client.post("/rag/graph", json={"query": "what is vector search?"})
+        assert resp.status_code == 200
+        data = resp.json()
+        assert {"answer", "docs", "steps", "graph_edges", "visited_nodes"} <= data.keys()
+
+    def test_visited_nodes_non_empty(self, uploaded_client):
+        with patch("src.rag.routes.llm", side_effect=_mock_llm):
+            resp = uploaded_client.post("/rag/graph", json={"query": "embeddings"})
+        assert len(resp.json()["visited_nodes"]) > 0
+
+    def test_steps_include_seed_and_hop(self, uploaded_client):
+        with patch("src.rag.routes.llm", side_effect=_mock_llm):
+            resp = uploaded_client.post("/rag/graph", json={"query": "RAG pipeline"})
+        step_names = [s["step"] for s in resp.json()["steps"]]
+        assert any("Seed" in s or "seed" in s for s in step_names)
+        assert any("Hop" in s or "hop" in s for s in step_names)
+
+    def test_query_too_long_rejected(self, client):
+        resp = client.post("/rag/graph", json={"query": "x" * 2001})
+        assert resp.status_code == 422
+
+    def test_empty_query_rejected(self, client):
+        resp = client.post("/rag/graph", json={"query": ""})
+        assert resp.status_code == 422
+
+
 # ── /rag/hybrid ───────────────────────────────────────────────────────────────
 class TestHybridRag:
     def test_returns_both_result_sets(self, uploaded_client):

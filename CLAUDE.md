@@ -26,7 +26,7 @@ docker compose up          # reads .env, sets ENV=production, healthchecks /heal
 ### Tests
 
 ```bash
-python -m pytest tests/ -v     # 35 tests, all LLM calls mocked, no API key needed
+python -m pytest tests/ -v     # 53 tests, all LLM calls mocked, no API key needed
 ```
 
 ## Architecture
@@ -45,7 +45,7 @@ frontend/
 tests/
   conftest.py                           ← shared fixtures: client, sample_text, uploaded_client
   test_rag_utils.py                     ← 16 unit tests for chunking + retrieval utilities
-  test_rag_endpoints.py                 ← 19 endpoint integration tests (LLM mocked)
+  test_rag_endpoints.py                 ← 37 endpoint integration tests (LLM mocked)
 Dockerfile                              ← multi-stage build; pre-downloads embedding model
 docker-compose.yml                      ← local dev; healthcheck wired to /health
 pyproject.toml                          ← pytest, ruff, mypy config

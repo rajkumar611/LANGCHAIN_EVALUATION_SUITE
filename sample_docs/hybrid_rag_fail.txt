@@ -1,0 +1,82 @@
+MERIDIAN CLOUD — PLATFORM OPERATIONS COMPENDIUM
+================================================
+
+SECTION 1 — INFRASTRUCTURE OVERVIEW
+--------------------------------------
+Meridian Cloud operates on a distributed microservices architecture. Compute nodes are provisioned across three availability zones: AZ-North, AZ-East, and AZ-West. Each availability zone maintains independent power, cooling, and network routing. The orchestration layer uses a consensus algorithm to elect a primary control plane node at startup and re-elects automatically on primary failure.
+
+The storage subsystem uses a log-structured merge tree to optimise write throughput. Reads are served from a tiered cache: L1 in-process memory, L2 Redis cluster, L3 object storage. Cache eviction follows a least-recently-used policy with a configurable TTL per data tier.
+
+SECTION 2 — CAPACITY PLANNING
+--------------------------------
+Capacity planning targets are reviewed quarterly. Current platform limits per tenant are: 2 million API calls per day, 500 GB hot storage, 5 TB cold archive, 100 concurrent connections. Tenants whose usage consistently exceeds 80% of any limit are flagged for capacity review and offered an upgrade consultation.
+
+The platform reserves 15% headroom above the advertised per-tenant limit to absorb traffic spikes without triggering hard throttles. This headroom is shared across all tenants in a given availability zone on a first-come basis during burst periods.
+
+SECTION 3 — AUTHENTICATION AND SESSION MANAGEMENT
+---------------------------------------------------
+All API requests require a signed JWT token. Tokens are issued by the authentication service with a default validity of 60 minutes. Token refresh is handled automatically by the SDK client libraries. If a token expires mid-request, the request is rejected with HTTP 401 and the client must re-authenticate.
+
+Service-to-service calls within the platform use mutual TLS. Certificate rotation is automated and occurs every 90 days. The certificate authority for internal service identities is operated by the Security team and is not accessible to tenant administrators.
+
+SECTION 4 — EVENT ROUTING SUBSYSTEM
+--------------------------------------
+The event routing subsystem receives events from all internal services and distributes them to registered consumer endpoints. Events are categorised by type (system, user, audit) and routed to the appropriate consumer queue based on subscription rules.
+
+Routing rules are evaluated in priority order. The first matching rule determines the destination queue. If no rule matches, the event is sent to the default dead-letter queue and held for 48 hours before automatic purge. Consumer endpoints must acknowledge receipt within 10 seconds or the event is requeued.
+
+SECTION 5 — ERROR CATALOGUE
+------------------------------
+
+PLAT-001: NODE_CONSENSUS_FAILURE
+  Classification: Critical
+  Description: The control plane failed to elect a primary node. This occurs when more than half the consensus participants become unreachable simultaneously.
+  Observed context: Typically follows a network partition event or a rolling restart that does not stagger node restarts by the required 45-second interval.
+
+PLAT-002: CACHE_INVALIDATION_STORM
+  Classification: High
+  Description: A thundering herd event where a large number of cache entries expire simultaneously, causing all requests to hit the L3 object storage layer at once.
+  Observed context: Occurs after a full cache flush or after a configuration push that resets TTL values across many keys in a short window.
+
+PLAT-003: ROUTING_RULE_LOOP
+  Classification: Medium
+  Description: Two or more routing rules create a circular reference where an event is routed to a queue whose consumer re-emits the same event type, causing infinite requeuing.
+  Observed context: Appears when routing rules are edited without validating for cycles. The loop detector runs asynchronously and may not catch newly introduced cycles within the first 2 minutes.
+
+PLAT-004: STORAGE_COMPACTION_STALL
+  Classification: Medium
+  Description: The log-structured merge tree compaction process has stalled, causing write latency to increase progressively as unmerged segments accumulate.
+  Observed context: Typically observed during high sustained write throughput exceeding 80% of the storage node's I/O capacity.
+
+PLAT-005: TLS_CERT_ROTATION_FAILED
+  Classification: High
+  Description: Automated certificate rotation did not complete within the 6-hour maintenance window. The previous certificate remains active but will expire within 3 days.
+  Observed context: Commonly caused by the certificate authority being unreachable during the rotation window, or by a service that did not restart to load the new certificate.
+
+SECTION 6 — MAINTENANCE WINDOWS
+----------------------------------
+Platform maintenance is scheduled every Sunday from 02:00 to 04:00 UTC. During this window, the following operations may be performed: rolling software updates, certificate rotation, configuration pushes, and storage compaction runs. Tenants are notified 72 hours in advance of any maintenance that is expected to cause degraded performance.
+
+Emergency maintenance outside the scheduled window may be initiated by the platform operations team with 30-minute advance notice. Emergency maintenance is reserved for critical security patches and severity-1 incident remediation only.
+
+SECTION 7 — TENANT TIER DEFINITIONS
+--------------------------------------
+Meridian Cloud offers three service tiers. The Standard tier provides best-effort SLA with a 99.5% monthly uptime target and business-hours support. The Professional tier guarantees 99.9% monthly uptime and 24/7 support response within 4 hours for critical issues. The Enterprise tier guarantees 99.95% monthly uptime, dedicated support engineering, and a 1-hour response SLA for critical issues.
+
+Tier upgrades take effect at the start of the next billing cycle. Downgrade requests must be submitted at least 30 days before the desired effective date. Mid-cycle tier changes are not supported.
+
+SECTION 8 — INCIDENT CLASSIFICATION
+--------------------------------------
+Incidents are classified on a four-point severity scale. A P1 incident is defined as a complete platform outage or data loss event affecting production workloads. A P2 incident is a significant degradation of a core service affecting more than 25% of requests. A P3 incident is a partial degradation of a non-critical service with an available workaround. A P4 incident is a cosmetic issue or a documentation discrepancy.
+
+P1 incidents trigger automatic escalation to the on-call engineering lead and the VP of Platform Operations within 5 minutes. P2 incidents trigger paging of the on-call team lead within 15 minutes.
+
+SECTION 9 — DATA RESIDENCY
+-----------------------------
+By default, all tenant data is stored in the AZ-North availability zone. Tenants on the Professional or Enterprise tier may elect a specific availability zone or request cross-zone replication for additional redundancy. Cross-zone replication carries a 20% storage surcharge and is billed monthly. Data residency elections are permanent and cannot be changed after initial configuration without a full data migration.
+
+SECTION 10 — BILLING AND OVERAGE
+-----------------------------------
+Billing is calculated on the first day of each month based on the prior month's metered usage. Overages are charged at 1.5 times the standard per-unit rate and appear as a separate line item on the invoice. Tenants can set soft limits in the billing portal that trigger an alert when 90% of the monthly allocation is consumed. Hard limits, which halt usage above the allocation, are available on request but not enabled by default.
+
+Usage disputes must be submitted within 14 days of invoice issuance. After 14 days, the invoice is considered accepted and no adjustments will be made.
