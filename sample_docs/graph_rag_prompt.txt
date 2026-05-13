@@ -56,4 +56,4 @@ To answer "Which employees need to act?", the system traverses:
 
 This answer could not be assembled from any single chunk across the four documents. Each link in the chain lives in a different file. Only the knowledge graph — by stitching entities across documents — can resolve this reliably.
 
-NOTE: This app's demo uploads one document at a time, so the 4-doc scenario cannot be run directly. The four documents are provided as educational samples to illustrate the multi-document scenario that true Graph RAG enables.
+To run this scenario: select all four graph_rag_doc*.txt files at once in the Graph RAG upload picker, then submit this prompt.

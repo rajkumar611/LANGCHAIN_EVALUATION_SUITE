@@ -46,8 +46,8 @@ def uploaded_client(client, sample_text):
     """TestClient with a document already uploaded — ready for RAG endpoint tests."""
     response = client.post(
         "/upload",
-        files={"file": ("test.txt", sample_text.encode(), "text/plain")},
+        files=[("files", ("test.txt", sample_text.encode(), "text/plain"))],
     )
     assert response.status_code == 200, f"Upload failed: {response.text}"
-    assert response.json()["chunks"] > 0
+    assert response.json()["total_chunks"] > 0
     return client

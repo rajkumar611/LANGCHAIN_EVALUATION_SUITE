@@ -21,17 +21,31 @@ class TestUpload:
     def test_upload_txt_success(self, client, sample_text):
         resp = client.post(
             "/upload",
-            files={"file": ("doc.txt", sample_text.encode(), "text/plain")},
+            files=[("files", ("doc.txt", sample_text.encode(), "text/plain"))],
         )
         assert resp.status_code == 200
         data = resp.json()
-        assert data["filename"] == "doc.txt"
-        assert data["chunks"] > 0
+        assert data["files"][0]["filename"] == "doc.txt"
+        assert data["files"][0]["chunks"] > 0
+        assert data["total_chunks"] > 0
+
+    def test_upload_multiple_files_success(self, client, sample_text):
+        resp = client.post(
+            "/upload",
+            files=[
+                ("files", ("a.txt", sample_text.encode(), "text/plain")),
+                ("files", ("b.txt", sample_text.encode(), "text/plain")),
+            ],
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data["files"]) == 2
+        assert data["total_chunks"] == data["files"][0]["chunks"] + data["files"][1]["chunks"]
 
     def test_upload_empty_file_returns_error(self, client):
         resp = client.post(
             "/upload",
-            files={"file": ("empty.txt", b"", "text/plain")},
+            files=[("files", ("empty.txt", b"", "text/plain"))],
         )
         assert resp.status_code == 200
         assert "error" in resp.json()
@@ -39,7 +53,7 @@ class TestUpload:
     def test_upload_whitespace_only_returns_error(self, client):
         resp = client.post(
             "/upload",
-            files={"file": ("blank.txt", b"   \n\n   ", "text/plain")},
+            files=[("files", ("blank.txt", b"   \n\n   ", "text/plain"))],
         )
         assert resp.status_code == 200
         assert "error" in resp.json()

@@ -164,30 +164,37 @@ def ctx_prompt(docs: list[dict], question: str) -> str:
 
 # ── Upload ────────────────────────────────────────────────────────────────────
 @router.post("/upload")
-async def upload_doc(file: UploadFile = File(...)):
-    """Accept a PDF or TXT file, chunk it, and rebuild all retrieval indexes."""
-    content = await file.read()
-    fname = file.filename or ""
+async def upload_doc(files: list[UploadFile] = File(...)):
+    """Accept one or more PDF/TXT files, chunk them all, and rebuild all retrieval indexes."""
+    all_chunks: list[str] = []
+    results: list[dict] = []
 
-    if fname.lower().endswith(".pdf"):
-        try:
-            from pypdf import PdfReader
+    for file in files:
+        content = await file.read()
+        fname = file.filename or ""
 
-            reader = PdfReader(io.BytesIO(content))
-            text = "\n\n".join(p.extract_text() or "" for p in reader.pages)
-        except Exception as e:
-            logger.warning("PDF parse failed for '%s': %s", fname, e)
-            return {"error": f"PDF error: {e}"}
-    else:
-        text = content.decode("utf-8", errors="ignore")
+        if fname.lower().endswith(".pdf"):
+            try:
+                from pypdf import PdfReader
 
-    chunks = chunk_text(text)
-    if not chunks:
-        return {"error": "No readable text found in file."}
+                reader = PdfReader(io.BytesIO(content))
+                text = "\n\n".join(p.extract_text() or "" for p in reader.pages)
+            except Exception as e:
+                logger.warning("PDF parse failed for '%s': %s", fname, e)
+                return {"error": f"PDF error in '{fname}': {e}"}
+        else:
+            text = content.decode("utf-8", errors="ignore")
 
-    rebuild_indexes(chunks)
-    logger.info("Uploaded '%s': %d chunks indexed", fname, len(chunks))
-    return {"filename": fname, "chunks": len(chunks)}
+        chunks = chunk_text(text)
+        if not chunks:
+            return {"error": f"No readable text found in '{fname}'."}
+
+        all_chunks.extend(chunks)
+        results.append({"filename": fname, "chunks": len(chunks)})
+
+    rebuild_indexes(all_chunks)
+    logger.info("Uploaded %d file(s): %d total chunks indexed", len(files), len(all_chunks))
+    return {"files": results, "total_chunks": len(all_chunks)}
 
 
 # ════════════════════════════════════════════════════════════════════════════════

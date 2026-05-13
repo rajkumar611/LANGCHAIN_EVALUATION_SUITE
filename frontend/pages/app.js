@@ -2134,15 +2134,15 @@ async function advancedUploadFile(input) {
   statusEl.style.color = 'var(--muted)';
   statusEl.textContent = 'Uploading…';
   const fd = new FormData();
-  fd.append('file', file);
+  fd.append('files', file);
   try {
     const r = await fetch(`${BASE}/upload`, {method:'POST', body: fd});
     const d = await r.json();
     if (r.ok) {
       statusEl.style.color = 'var(--green)';
-      statusEl.textContent = `✓ ${file.name} — ${d.chunks} chunks indexed`;
+      statusEl.textContent = `✓ ${file.name} — ${d.total_chunks} chunks indexed`;
       const sharedStatus = document.getElementById('uploadStatus');
-      if (sharedStatus) { sharedStatus.textContent = `✓ ${file.name} — ${d.chunks} chunks`; sharedStatus.className = 'upload-status ok'; }
+      if (sharedStatus) { sharedStatus.textContent = `✓ ${file.name} — ${d.total_chunks} chunks`; sharedStatus.className = 'upload-status ok'; }
     } else {
       statusEl.style.color = 'var(--red)';
       statusEl.textContent = d.detail || 'Upload failed';
@@ -2185,15 +2185,15 @@ async function naiveUploadFile(input) {
   statusEl.style.color = 'var(--muted)';
   statusEl.textContent = 'Uploading…';
   const fd = new FormData();
-  fd.append('file', file);
+  fd.append('files', file);
   try {
     const r = await fetch(`${BASE}/upload`, {method:'POST', body: fd});
     const d = await r.json();
     if (r.ok) {
       statusEl.style.color = 'var(--green)';
-      statusEl.textContent = `✓ ${file.name} — ${d.chunks} chunks indexed`;
+      statusEl.textContent = `✓ ${file.name} — ${d.total_chunks} chunks indexed`;
       const sharedStatus = document.getElementById('uploadStatus');
-      if (sharedStatus) { sharedStatus.textContent = `✓ ${file.name} — ${d.chunks} chunks`; sharedStatus.className = 'upload-status ok'; }
+      if (sharedStatus) { sharedStatus.textContent = `✓ ${file.name} — ${d.total_chunks} chunks`; sharedStatus.className = 'upload-status ok'; }
     } else {
       statusEl.style.color = 'var(--red)';
       statusEl.textContent = d.detail || 'Upload failed';
@@ -2231,15 +2231,21 @@ async function runNaiveRAG() {
 
 // ── Upload/run helpers for Agentic, Hybrid, Graph pages ──────────────────────
 async function _sharedUpload(input, statusId) {
-  const file = input.files[0]; if (!file) return;
+  if (!input.files.length) return;
   const s = document.getElementById(statusId);
   s.style.color = 'var(--muted)'; s.textContent = 'Uploading…';
-  const fd = new FormData(); fd.append('file', file);
+  const fd = new FormData();
+  for (const f of input.files) fd.append('files', f);
   try {
     const r = await fetch(`${BASE}/upload`, {method:'POST', body: fd});
     const d = await r.json();
-    if (r.ok) { s.style.color='var(--green)'; s.textContent=`✓ ${file.name} — ${d.chunks} chunks indexed`; }
-    else { s.style.color='var(--red)'; s.textContent=d.detail||'Upload failed'; }
+    if (r.ok) {
+      s.style.color = 'var(--green)';
+      const label = d.files.length === 1
+        ? `✓ ${d.files[0].filename} — ${d.total_chunks} chunks indexed`
+        : `✓ ${d.files.length} files — ${d.total_chunks} chunks indexed`;
+      s.textContent = label;
+    } else { s.style.color='var(--red)'; s.textContent=d.detail||'Upload failed'; }
   } catch { s.style.color='var(--red)'; s.textContent='Upload error'; }
 }
 async function _sharedRun(queryId, resultId, answerId, stepsId, endpoint) {
