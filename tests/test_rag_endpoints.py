@@ -169,6 +169,12 @@ class TestAgenticRag:
             resp = uploaded_client.post("/rag/agentic", json={"query": "explain BM25"})
         assert isinstance(resp.json()["answer"], str)
 
+    def test_docs_list_is_list(self, uploaded_client):
+        mock_response = _build_agentic_mock_response()
+        with patch("src.rag.routes.client.messages.create", return_value=mock_response):
+            resp = uploaded_client.post("/rag/agentic", json={"query": "chunking"})
+        assert isinstance(resp.json()["docs"], list)
+
     def test_query_too_long_rejected(self, client):
         resp = client.post("/rag/agentic", json={"query": "x" * 2001})
         assert resp.status_code == 422
@@ -233,6 +239,23 @@ class TestGraphRag:
 
 # ── /rag/hybrid ───────────────────────────────────────────────────────────────
 class TestHybridRag:
+    def test_no_docs_returns_guidance(self, client):
+        import src.rag.routes as r
+
+        original = r.DOCS[:]
+        r.DOCS.clear()
+        resp = client.post("/rag/hybrid", json={"query": "what is RAG?"})
+        r.DOCS.extend(original)
+        assert resp.status_code == 200
+        assert "No document" in resp.json()["answer"]
+
+    def test_returns_expected_keys(self, uploaded_client):
+        with patch("src.rag.routes.llm", side_effect=_mock_llm):
+            resp = uploaded_client.post("/rag/hybrid", json={"query": "what is vector search?"})
+        assert resp.status_code == 200
+        data = resp.json()
+        assert {"answer", "docs", "steps", "vector_results", "bm25_results"} <= data.keys()
+
     def test_returns_both_result_sets(self, uploaded_client):
         with patch("src.rag.routes.llm", side_effect=_mock_llm):
             resp = uploaded_client.post("/rag/hybrid", json={"query": "retrieval"})
@@ -247,6 +270,24 @@ class TestHybridRag:
         for doc in resp.json()["docs"]:
             assert "sources" in doc
             assert len(doc["sources"]) > 0
+
+    def test_answer_is_string(self, uploaded_client):
+        with patch("src.rag.routes.llm", side_effect=_mock_llm):
+            resp = uploaded_client.post("/rag/hybrid", json={"query": "BM25"})
+        assert isinstance(resp.json()["answer"], str)
+
+    def test_steps_list_non_empty(self, uploaded_client):
+        with patch("src.rag.routes.llm", side_effect=_mock_llm):
+            resp = uploaded_client.post("/rag/hybrid", json={"query": "chunking"})
+        assert len(resp.json()["steps"]) > 0
+
+    def test_query_too_long_rejected(self, client):
+        resp = client.post("/rag/hybrid", json={"query": "x" * 2001})
+        assert resp.status_code == 422
+
+    def test_empty_query_rejected(self, client):
+        resp = client.post("/rag/hybrid", json={"query": ""})
+        assert resp.status_code == 422
 
 
 # ── /rag/evaluate ─────────────────────────────────────────────────────────────

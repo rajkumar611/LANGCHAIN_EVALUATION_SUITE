@@ -12,8 +12,11 @@ os.environ.setdefault("ANTHROPIC_API_KEY", "sk-test-dummy")
 
 from src.rag.routes import (
     MAX_CHUNKS,
+    _parse_score,
     bm25_search,
     chunk_text,
+    ctx_prompt,
+    no_docs_response,
     rebuild_indexes,
     reciprocal_rank_fusion,
     vector_search,
@@ -144,3 +147,102 @@ class TestReciprocalRankFusion:
     def test_empty_lists_returns_empty(self):
         assert reciprocal_rank_fusion([]) == []
         assert reciprocal_rank_fusion([[]]) == []
+
+
+# ── _parse_score ──────────────────────────────────────────────────────────────
+class TestParseScore:
+    def test_valid_json_extracted(self):
+        raw = '{"score": 0.8, "reasoning": "Good."}'
+        result = _parse_score(raw)
+        assert result["score"] == 0.8
+        assert result["reasoning"] == "Good."
+
+    def test_json_embedded_in_text(self):
+        raw = 'Some preamble {"score": 0.5, "reasoning": "ok"} trailing text'
+        result = _parse_score(raw)
+        assert result["score"] == 0.5
+
+    def test_invalid_json_returns_fallback(self):
+        result = _parse_score("not json at all")
+        assert result["score"] == 0.0
+        assert "reasoning" in result
+
+    def test_empty_string_returns_fallback(self):
+        result = _parse_score("")
+        assert result["score"] == 0.0
+
+    def test_score_zero_preserved(self):
+        result = _parse_score('{"score": 0.0, "reasoning": "Wrong."}')
+        assert result["score"] == 0.0
+
+
+# ── ctx_prompt ────────────────────────────────────────────────────────────────
+class TestCtxPrompt:
+    def test_question_in_prompt(self):
+        docs = [{"text": "RAG is great."}]
+        prompt = ctx_prompt(docs, "What is RAG?")
+        assert "What is RAG?" in prompt
+
+    def test_doc_text_in_prompt(self):
+        docs = [{"text": "RAG is great."}]
+        prompt = ctx_prompt(docs, "question")
+        assert "RAG is great." in prompt
+
+    def test_multiple_docs_numbered(self):
+        docs = [{"text": "First."}, {"text": "Second."}]
+        prompt = ctx_prompt(docs, "q")
+        assert "[1]" in prompt
+        assert "[2]" in prompt
+
+    def test_empty_docs_produces_valid_prompt(self):
+        prompt = ctx_prompt([], "anything")
+        assert "anything" in prompt
+        assert "Context:" in prompt
+
+
+# ── no_docs_response ──────────────────────────────────────────────────────────
+class TestNoDocsResponse:
+    def test_returns_dict_with_required_keys(self):
+        resp = no_docs_response()
+        assert {"answer", "docs", "steps"} <= resp.keys()
+
+    def test_answer_mentions_upload(self):
+        resp = no_docs_response()
+        assert "upload" in resp["answer"].lower()
+
+    def test_docs_and_steps_are_empty_lists(self):
+        resp = no_docs_response()
+        assert resp["docs"] == []
+        assert resp["steps"] == []
+
+
+# ── llm error handling ────────────────────────────────────────────────────────
+class TestLlmErrorHandling:
+    def test_api_error_raises_runtime_error(self):
+        import anthropic
+        from unittest.mock import patch, MagicMock
+
+        from src.rag.routes import llm
+
+        with patch("src.rag.routes.client.messages.create") as mock_create:
+            mock_create.side_effect = anthropic.APIStatusError(
+                "bad request",
+                response=MagicMock(status_code=400),
+                body={},
+            )
+            try:
+                llm("test prompt")
+                assert False, "Should have raised"
+            except RuntimeError as e:
+                assert "Anthropic API error" in str(e)
+
+    def test_unexpected_error_raises_runtime_error(self):
+        from unittest.mock import patch
+        from src.rag.routes import llm
+
+        with patch("src.rag.routes.client.messages.create", side_effect=ValueError("boom")):
+            try:
+                llm("test prompt")
+                assert False, "Should have raised"
+            except RuntimeError as e:
+                assert "LLM call failed" in str(e)

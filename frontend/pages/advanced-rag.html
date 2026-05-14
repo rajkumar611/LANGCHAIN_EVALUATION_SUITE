@@ -7,7 +7,7 @@
       <span style="font-size:20px;font-weight:800;letter-spacing:-0.4px;color:var(--text)">Advanced RAG</span>
     </div>
     <p style="font-size:17px;color:var(--muted);line-height:1.8;margin-bottom:32px;">
-      A production-grade pipeline that adds intelligence at every step — structured ingestion, multi-vector indexing, query rewriting, hybrid search, cross-encoder reranking, and answer validation. Each layer addresses a specific failure mode of Naive RAG.
+      A production-grade pipeline that adds intelligence at every step — structured ingestion, multi-vector indexing, query rewriting, hybrid search, cross-encoder reranking, and answer validation. Each layer addresses a specific failure mode of Hybrid RAG.
     </p>
 
     <!-- Pipeline -->
@@ -52,38 +52,12 @@
     <div style="margin-bottom:32px">
       <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--blue);margin-bottom:12px">How It Works</div>
       <div style="display:grid;gap:10px">
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
-          <div style="font-size:13px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Step 1 — Document Ingestion</div>
-          <div style="font-size:14px;color:var(--muted);line-height:1.75">Text, tables, and images are extracted separately, preserving document structure. A cleaning step removes footers, encoding issues, and boilerplate. Chunking uses <strong style="color:var(--text)">semantic boundaries, sliding window, or parent-child strategies with overlap</strong> — no idea is cut mid-thought. Rich metadata including document name, page number, section, and content type is stored alongside every chunk.</div>
-        </div>
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
-          <div style="font-size:13px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Step 2 — Multi-Vector Indexing</div>
-          <div style="font-size:14px;color:var(--muted);line-height:1.75">Each chunk receives <strong style="color:var(--text)">multiple embedding vectors</strong> — one for full content, one for a summary, and one for hypothetical questions the chunk can answer. Storage holds all vectors, the raw text, and the complete metadata. This enables retrieval from multiple angles for the same piece of content.</div>
-        </div>
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
-          <div style="font-size:13px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Step 3 — Query Processing &amp; Retrieval</div>
-          <div style="font-size:14px;color:var(--muted);line-height:1.75">The user's question is first <strong style="color:var(--text)">rewritten, decomposed into sub-questions, or expanded using HyDE</strong> before retrieval. Hybrid search then combines vector similarity and keyword search, with metadata filtering to narrow the candidate pool. A <strong style="color:var(--text)">cross-encoder re-ranker</strong> scores each candidate for precise relevance — unlike the bi-encoder used in indexing, the cross-encoder sees both query and chunk together, making it far more accurate.</div>
-        </div>
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
-          <div style="font-size:13px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Step 4 — Post-Processing &amp; Generation</div>
-          <div style="font-size:14px;color:var(--muted);line-height:1.75">Before the LLM sees anything, chunks are <strong style="color:var(--text)">filtered by relevance threshold, deduplicated, compressed</strong> to extract only relevant sentences, and reordered so the most relevant content sits at the strongest attention positions in the context window. The prompt is structured with source citations. A final validation step checks the answer for faithfulness and completeness against the retrieved evidence.</div>
-        </div>
-      </div>
-    </div>
 
-    <!-- Full Pipeline Walkthrough -->
-    <div style="margin-bottom:32px">
-      <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--blue);margin-bottom:12px">Full Pipeline — Step by Step</div>
-      <div style="display:grid;gap:10px">
-
-        <!-- Ingestion Steps Label -->
-        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;padding:6px 0 2px">Ingestion Phase (Offline)</div>
-
-        <!-- Step 1: Document Ingestion & Cleaning -->
+        <!-- Step 1 -->
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
-          <div style="font-size:13px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Step 1 — Document Ingestion &amp; Cleaning</div>
-          <div style="font-size:14px;color:var(--muted);line-height:1.75;margin-bottom:10px">Raw data arrives from multiple sources. A parsing layer extracts clean text before chunking begins.</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <div style="font-size:13px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Step 1 — Document Ingestion, Cleaning &amp; Smart Chunking</div>
+          <div style="font-size:14px;color:var(--muted);line-height:1.75;margin-bottom:10px">Raw data arrives from multiple sources. A parsing layer extracts clean text before chunking begins — headers, footers, encoding noise, and boilerplate are removed first. Unlike fixed-size splitting, Advanced RAG uses strategies that respect meaning boundaries.</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
             <div>
               <div style="font-size:13px;font-weight:700;color:#3b82f6;margin-bottom:6px">Input Sources</div>
               <ul style="font-size:13px;color:var(--muted);line-height:1.8;padding-left:16px;margin:0">
@@ -103,13 +77,7 @@
               </ul>
             </div>
           </div>
-        </div>
-
-        <!-- Step 2: Advanced Chunking -->
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
-          <div style="font-size:13px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Step 2 — Advanced Chunking</div>
-          <div style="font-size:14px;color:var(--muted);line-height:1.75;margin-bottom:12px">Unlike naive fixed-size splitting, Advanced RAG uses strategies that respect meaning boundaries. No idea is cut mid-thought.</div>
-          <div style="display:grid;gap:8px">
+          <div style="display:grid;gap:8px;margin-bottom:12px">
             <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px">
               <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">Sentence-Aware Chunking</div>
               <div style="font-size:13px;color:var(--muted);line-height:1.7">Splits only at sentence boundaries — never in the middle of a sentence. Preserves grammatical completeness.</div>
@@ -120,10 +88,10 @@
             </div>
             <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px">
               <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">Recursive Chunking (Hierarchical)</div>
-              <div style="font-size:13px;color:var(--muted);line-height:1.7">Splits top-down: section → paragraph → sentence. Small child chunks are stored for precise retrieval; parent chunks are kept for richer LLM context.</div>
+              <div style="font-size:13px;color:var(--muted);line-height:1.7">Splits top-down: section → paragraph → sentence. Small child chunks are stored for precise retrieval; parent chunks provide richer LLM context.</div>
             </div>
           </div>
-          <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:13px;font-family:monospace;color:var(--muted);line-height:1.9;margin-top:10px">
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:13px;font-family:monospace;color:var(--muted);line-height:1.9">
             <span style="color:var(--blue);font-weight:700">Input text (paragraph):</span><br>
             "Self-attention computes relationships between all tokens in a sequence. Each token attends to every other token, producing a weighted sum of value vectors."<br><br>
             <span style="color:var(--green);font-weight:700">Sentence-aware output (2 chunks):</span><br>
@@ -132,11 +100,11 @@
           </div>
         </div>
 
-        <!-- Step 3: Metadata Enrichment -->
+        <!-- Step 2 -->
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
-          <div style="font-size:13px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Step 3 — Metadata Enrichment</div>
-          <div style="font-size:14px;color:var(--muted);line-height:1.75;margin-bottom:10px">Every chunk is tagged with structured metadata at ingestion time. This metadata powers filtering, ranking boosts, and routing in agentic systems.</div>
-          <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:13px;font-family:monospace;color:var(--muted);line-height:1.9;margin-bottom:10px">
+          <div style="font-size:13px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Step 2 — Metadata Enrichment &amp; Dual Storage</div>
+          <div style="font-size:14px;color:var(--muted);line-height:1.75;margin-bottom:10px">Every chunk is tagged with structured metadata at ingestion time. This metadata powers filtering, ranking boosts, and source traceability. Each chunk is then stored in <strong style="color:var(--text)">two completely separate systems</strong> — each optimised for a different type of search.</div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:13px;font-family:monospace;color:var(--muted);line-height:1.9;margin-bottom:12px">
             <span style="color:var(--green);font-weight:700">Chunk metadata example:</span><br>
             {<br>
             &nbsp;&nbsp;<span style="color:#3b82f6">"source"</span>: <span style="color:var(--amber)">"attention_paper.pdf"</span>,<br>
@@ -146,13 +114,6 @@
             &nbsp;&nbsp;<span style="color:#3b82f6">"chunk_id"</span>: <span style="color:var(--green)">42</span><br>
             }
           </div>
-          <div style="font-size:13px;color:var(--muted)">At query time, metadata enables <strong style="color:var(--text)">pre-filtering</strong> (only search chunks from a specific year or section), <strong style="color:var(--text)">ranking boosts</strong> (prefer recent sources), and <strong style="color:var(--text)">traceability</strong> — every answer can be traced to an exact source and section.</div>
-        </div>
-
-        <!-- Step 4: Dual Storage -->
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
-          <div style="font-size:13px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Step 4 — Dual Storage: Two Parallel Systems</div>
-          <div style="font-size:14px;color:var(--muted);line-height:1.75;margin-bottom:12px">Each chunk is stored in <strong style="color:var(--text)">two completely separate systems</strong> — each optimised for a different type of search. These run independently; they do not compare against each other.</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px">
             <div style="background:#1e3a5f33;border:1px solid #3b82f644;border-radius:8px;padding:12px 14px">
               <div style="font-size:13px;font-weight:700;color:#3b82f6;margin-bottom:8px">Vector Database</div>
@@ -173,19 +134,15 @@
               </div>
             </div>
           </div>
-          <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--muted)">
-            <strong style="color:var(--text)">Key distinction:</strong> The keyword index is an <em>inverted index</em> — a term-to-document lookup table, not a similarity-scored structure. A keyword query extracts terms and looks them up directly in this table. No embedding or cosine comparison is involved.
-          </div>
+          <div style="font-size:13px;color:var(--muted)">At query time, metadata enables <strong style="color:var(--text)">pre-filtering</strong> (only search chunks from a specific year or section), <strong style="color:var(--text)">ranking boosts</strong> (prefer recent sources), and <strong style="color:var(--text)">traceability</strong> — every answer can be traced to an exact source and section.</div>
         </div>
 
-        <!-- Query time label -->
-        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;padding:6px 0 2px;margin-top:4px">Query Time Phase (Online)</div>
-
-        <!-- Step 5: User Query + Query Understanding -->
+        <!-- Step 3 -->
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
-          <div style="font-size:13px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Step 5 — Query Understanding Layer</div>
-          <div style="font-size:14px;color:var(--muted);line-height:1.75;margin-bottom:10px">Before retrieval, the raw user question is transformed to maximise retrieval quality. Any combination of these techniques can be applied.</div>
-          <div style="display:grid;gap:8px">
+          <div style="font-size:13px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Step 3 — Query Understanding, Hybrid Retrieval &amp; Reranking</div>
+          <div style="font-size:14px;color:var(--muted);line-height:1.75;margin-bottom:10px">Before retrieval, the raw user question is transformed to maximise retrieval quality. Then hybrid search runs — identical to Hybrid RAG — but followed by a <strong style="color:var(--text)">cross-encoder reranker</strong> that scores every candidate for precision.</div>
+
+          <div style="display:grid;gap:8px;margin-bottom:14px">
             <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px">
               <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">Query Rewriting</div>
               <div style="font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:6px">An LLM rewrites the raw question to be more retrieval-friendly — more specific, precise, and aligned with how document text is phrased.</div>
@@ -208,82 +165,14 @@
               <div style="font-size:13px;color:var(--muted);line-height:1.7">Generate multiple paraphrases or sub-questions from one input, run all of them through retrieval, then merge. Improves recall by covering more of the semantic space.</div>
             </div>
           </div>
-        </div>
 
-        <!-- Step 6: Parallel Retrieval -->
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
-          <div style="font-size:13px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Step 6 — Parallel Retrieval: Two Independent Paths</div>
-          <div style="font-size:14px;color:var(--muted);line-height:1.75;margin-bottom:12px">Vector search and keyword search run simultaneously and <strong style="color:var(--text)">completely independently</strong>. They do not compare results with each other at this stage.</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-            <div>
-              <div style="font-size:13px;font-weight:700;color:#3b82f6;margin-bottom:6px">Vector Search Path</div>
-              <div style="font-size:13px;color:var(--muted);line-height:1.75;margin-bottom:8px">Query is embedded → cosine similarity computed against all stored vectors → top-k by score.</div>
-              <table style="width:100%;border-collapse:collapse;font-size:13px">
-                <thead><tr style="background:#1e3a5f"><th style="padding:6px 10px;text-align:left;color:var(--muted);font-weight:600">Rank</th><th style="padding:6px 10px;text-align:left;color:var(--muted);font-weight:600">Chunk</th></tr></thead>
-                <tbody>
-                  <tr style="border-top:1px solid var(--border)"><td style="padding:6px 10px;color:var(--muted)">1</td><td style="padding:6px 10px;color:var(--text)">Chunk A</td></tr>
-                  <tr style="border-top:1px solid var(--border)"><td style="padding:6px 10px;color:var(--muted)">2</td><td style="padding:6px 10px;color:var(--text)">Chunk B</td></tr>
-                  <tr style="border-top:1px solid var(--border)"><td style="padding:6px 10px;color:var(--muted)">3</td><td style="padding:6px 10px;color:var(--text)">Chunk C</td></tr>
-                </tbody>
-              </table>
-            </div>
-            <div>
-              <div style="font-size:13px;font-weight:700;color:var(--amber);margin-bottom:6px">Keyword Search Path (Inverted Index)</div>
-              <div style="font-size:13px;color:var(--muted);line-height:1.75;margin-bottom:8px">Keywords extracted → direct lookup in the inverted index → BM25/TF-IDF scored. No vectors involved.</div>
-              <table style="width:100%;border-collapse:collapse;font-size:13px">
-                <thead><tr style="background:#1e3a5f"><th style="padding:6px 10px;text-align:left;color:var(--muted);font-weight:600">Rank</th><th style="padding:6px 10px;text-align:left;color:var(--muted);font-weight:600">Chunk</th></tr></thead>
-                <tbody>
-                  <tr style="border-top:1px solid var(--border)"><td style="padding:6px 10px;color:var(--muted)">1</td><td style="padding:6px 10px;color:var(--text)">Chunk C</td></tr>
-                  <tr style="border-top:1px solid var(--border)"><td style="padding:6px 10px;color:var(--muted)">2</td><td style="padding:6px 10px;color:var(--text)">Chunk D</td></tr>
-                  <tr style="border-top:1px solid var(--border)"><td style="padding:6px 10px;color:var(--muted)">3</td><td style="padding:6px 10px;color:var(--text)">Chunk A</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-          <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--muted)">
-            <strong style="color:var(--text)">Important:</strong> No direct comparison between vector and keyword results happens here. Fusion only occurs in the next step. This separation is what allows each retriever to operate at maximum efficiency using its native data structure.
-          </div>
-        </div>
-
-        <!-- Step 7: RRF Fusion -->
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
-          <div style="font-size:13px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Step 7 — RRF Fusion → Candidate Pool</div>
-          <div style="font-size:14px;color:var(--muted);line-height:1.75;margin-bottom:12px">
-            The two ranked lists are merged using Reciprocal Rank Fusion. Each chunk scores <code style="background:var(--bg);padding:1px 6px;border-radius:4px;font-size:13px">1/(60+rank)</code> from each list it appears in — scores are summed. No raw similarity scores are compared. This produces a combined candidate pool of 20–100 chunks for reranking.
-          </div>
-          <div style="font-size:13px;font-weight:700;color:var(--green);margin-bottom:6px">After RRF — Merged Ranking</div>
-          <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:10px">
-            <thead><tr style="background:#1e3a5f"><th style="padding:6px 10px;text-align:left;color:var(--muted);font-weight:600">Final Rank</th><th style="padding:6px 10px;text-align:left;color:var(--muted);font-weight:600">Chunk</th><th style="padding:6px 10px;text-align:left;color:var(--muted);font-weight:600">Why</th></tr></thead>
-            <tbody>
-              <tr style="border-top:1px solid var(--border)"><td style="padding:6px 10px;color:var(--muted)">1</td><td style="padding:6px 10px;color:var(--text)">Chunk C</td><td style="padding:6px 10px;color:var(--muted)">#3 in vector + #1 in keyword</td></tr>
-              <tr style="border-top:1px solid var(--border)"><td style="padding:6px 10px;color:var(--muted)">2</td><td style="padding:6px 10px;color:var(--text)">Chunk A</td><td style="padding:6px 10px;color:var(--muted)">#1 in vector + #3 in keyword</td></tr>
-              <tr style="border-top:1px solid var(--border)"><td style="padding:6px 10px;color:var(--muted)">3</td><td style="padding:6px 10px;color:var(--text)">Chunk D</td><td style="padding:6px 10px;color:var(--muted)">#2 in keyword only</td></tr>
-              <tr style="border-top:1px solid var(--border)"><td style="padding:6px 10px;color:var(--muted)">4</td><td style="padding:6px 10px;color:var(--text)">Chunk B</td><td style="padding:6px 10px;color:var(--muted)">#2 in vector only</td></tr>
-            </tbody>
-          </table>
-          <div style="font-size:13px;color:var(--muted);font-style:italic">These become the candidate pool passed to the cross-encoder — typically 20–100 chunks before the next precision cut.</div>
-        </div>
-
-        <!-- Step 8: Cross-Encoder Reranking -->
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
-          <div style="font-size:13px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Step 8 — Cross-Encoder Reranking</div>
-          <div style="font-size:14px;color:var(--muted);line-height:1.75;margin-bottom:10px">
-            This is the <strong style="color:var(--text)">first stage where query and chunk are seen together</strong>. The bi-encoder used during retrieval encoded them independently (fast but less accurate). The cross-encoder reads both as a single input, letting transformer attention directly compare their tokens — far more accurate but slower.
-          </div>
-          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px">Input — one pair per candidate:</div>
-          <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:13px;font-family:monospace;color:var(--muted);line-height:1.9;margin-bottom:12px">
-            (Query, Chunk C)<br>
-            (Query, Chunk A)<br>
-            (Query, Chunk D)<br>
-            (Query, Chunk B)
-          </div>
-          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px">Internal token format:</div>
-          <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:13px;font-family:monospace;color:var(--muted);line-height:1.9;margin-bottom:12px">
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px">After hybrid retrieval + RRF, the candidate pool goes to the cross-encoder:</div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:13px;font-family:monospace;color:var(--muted);line-height:1.9;margin-bottom:10px">
             [CLS] How does self-attention work? [SEP]<br>
             Self-attention computes relationships between tokens... [SEP]
           </div>
-          <div style="font-size:13px;font-weight:700;color:var(--green);margin-bottom:6px">Output — precision relevance scores:</div>
-          <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:12px">
+          <div style="font-size:13px;font-weight:700;color:var(--green);margin-bottom:6px">Cross-encoder output — precision relevance scores:</div>
+          <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:10px">
             <thead><tr style="background:#1e3a5f"><th style="padding:6px 10px;text-align:left;color:var(--muted);font-weight:600">Pair</th><th style="padding:6px 10px;text-align:left;color:var(--muted);font-weight:600">Score</th></tr></thead>
             <tbody>
               <tr style="border-top:1px solid var(--border)"><td style="padding:6px 10px;color:var(--muted)">Query + Chunk C</td><td style="padding:6px 10px;color:var(--green);font-weight:700">0.97</td></tr>
@@ -292,14 +181,14 @@
               <tr style="border-top:1px solid var(--border)"><td style="padding:6px 10px;color:var(--muted)">Query + Chunk B</td><td style="padding:6px 10px;color:var(--red)">0.18</td></tr>
             </tbody>
           </table>
-          <div style="font-size:13px;color:var(--muted)">Only the top-scored chunks (e.g. C and A) proceed. Common models: Cohere Rerank, BGE Reranker, Jina Reranker. This app uses the LLM itself for scoring (0–10 per passage) as a reranker approximation.</div>
+          <div style="font-size:13px;color:var(--muted)">Unlike the bi-encoder used during indexing (which encodes query and chunks independently), the cross-encoder reads both as a single input — letting transformer attention directly compare their tokens. Slower but far more accurate. Only the top-scored chunks (e.g. C and A) proceed to generation. Common models: Cohere Rerank, BGE Reranker, Jina Reranker. This app uses the LLM itself as a scoring approximation.</div>
         </div>
 
-        <!-- Step 9: Context Compression -->
+        <!-- Step 4 -->
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
-          <div style="font-size:13px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Step 9 — Context Compression</div>
-          <div style="font-size:14px;color:var(--muted);line-height:1.75;margin-bottom:10px">Before the LLM sees the context, a post-processing pass maximises signal and minimises token waste.</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+          <div style="font-size:13px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Step 4 — Context Compression &amp; Generation</div>
+          <div style="font-size:14px;color:var(--muted);line-height:1.75;margin-bottom:12px">Before the LLM sees anything, a post-processing pass maximises signal and minimises token waste. The prompt is structured with source citations. A final validation step checks the answer for faithfulness against the retrieved evidence.</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
             <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px">
               <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">Deduplication</div>
               <div style="font-size:13px;color:var(--muted);line-height:1.7">Remove near-duplicate chunks that would waste context window tokens on repeated information.</div>
@@ -316,30 +205,73 @@
         </div>
 
       </div>
+    </div>
 
-      <!-- Final mental model -->
-      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;margin-top:10px">
-        <div style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px">Complete Mental Model</div>
-        <div style="display:flex;flex-direction:column;align-items:flex-start;gap:0;font-size:13px;font-family:monospace;color:var(--muted);line-height:2">
-          <div><span style="color:var(--blue);font-weight:700">INGESTION</span></div>
-          <div style="margin-left:10px">↓</div>
-          <div style="margin-left:10px">Chunking → Metadata → Embeddings</div>
-          <div style="margin-left:10px">↓</div>
-          <div style="margin-left:10px"><span style="color:#3b82f6">Vector DB</span> (semantic search) &nbsp;│&nbsp; <span style="color:var(--amber)">Keyword Index</span> (inverted index / BM25)</div>
-          <div style="margin-left:60px">↓</div>
-          <div><span style="color:var(--blue);font-weight:700">QUERY TIME</span></div>
-          <div style="margin-left:10px">User Query → Query Understanding (rewrite / HyDE / expand)</div>
-          <div style="margin-left:10px">↓</div>
-          <div style="margin-left:10px"><span style="color:#3b82f6">Vector Search</span> ──┐</div>
-          <div style="margin-left:120px">├──→ <span style="color:var(--green);font-weight:700">RRF Fusion</span> → Candidate Pool (20–100 chunks)</div>
-          <div style="margin-left:10px"><span style="color:var(--amber)">Keyword Search</span> ──┘</div>
-          <div style="margin-left:160px">↓</div>
-          <div style="margin-left:60px"><span style="color:var(--purple)">Cross-Encoder Reranking</span> <span style="color:var(--muted);font-size:12px">(first true query+chunk joint comparison)</span></div>
-          <div style="margin-left:160px">↓</div>
-          <div style="margin-left:80px">Context Compression (dedup · summarise · reorder)</div>
-          <div style="margin-left:160px">↓</div>
-          <div style="margin-left:130px"><span style="color:var(--green);font-weight:700">LLM</span> → Answer</div>
-        </div>
+    <!-- Mental model -->
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;margin-bottom:32px">
+      <div style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px">Mental Model — Advanced RAG</div>
+      <div style="display:flex;flex-direction:column;align-items:flex-start;gap:0;font-size:13px;font-family:monospace;color:var(--muted);line-height:2">
+        <div><span style="color:var(--blue);font-weight:700">INGESTION</span></div>
+        <div style="margin-left:10px">↓</div>
+        <div style="margin-left:10px">Cleaning → Smart chunking → Metadata enrichment</div>
+        <div style="margin-left:10px">↓</div>
+        <div style="margin-left:10px"><span style="color:#3b82f6">Vector DB</span> (semantic search) &nbsp;│&nbsp; <span style="color:var(--amber)">Keyword Index</span> (inverted index / BM25)</div>
+        <div style="margin-left:60px">↓</div>
+        <div><span style="color:var(--blue);font-weight:700">QUERY TIME</span></div>
+        <div style="margin-left:10px">User Query → Query Understanding (rewrite / HyDE / expand)</div>
+        <div style="margin-left:10px">↓</div>
+        <div style="margin-left:10px"><span style="color:#3b82f6">Vector Search</span> ──┐</div>
+        <div style="margin-left:120px">├──→ <span style="color:var(--green);font-weight:700">RRF Fusion</span> → Candidate Pool (20–100 chunks)</div>
+        <div style="margin-left:10px"><span style="color:var(--amber)">Keyword Search</span> ──┘</div>
+        <div style="margin-left:160px">↓</div>
+        <div style="margin-left:60px"><span style="color:var(--purple)">Cross-Encoder Reranking</span> <span style="color:var(--muted);font-size:12px">(first true query+chunk joint comparison)</span></div>
+        <div style="margin-left:160px">↓</div>
+        <div style="margin-left:80px">Context Compression (dedup · summarise · reorder)</div>
+        <div style="margin-left:160px">↓</div>
+        <div style="margin-left:130px"><span style="color:var(--green);font-weight:700">LLM</span> → Answer + Validation</div>
+      </div>
+    </div>
+
+    <!-- vs Hybrid RAG -->
+    <div style="margin-bottom:32px">
+      <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--blue);margin-bottom:12px">What Advanced RAG adds over Hybrid RAG</div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <thead>
+            <tr style="background:#1e3a5f">
+              <th style="padding:10px 14px;text-align:left;color:var(--muted);font-weight:700;border:1px solid var(--border)">Feature</th>
+              <th style="padding:10px 14px;text-align:left;color:var(--muted);font-weight:700;border:1px solid var(--border)">Hybrid RAG</th>
+              <th style="padding:10px 14px;text-align:left;color:var(--green);font-weight:700;border:1px solid var(--border)">Advanced RAG</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border:1px solid var(--border)">
+              <td style="padding:9px 14px;color:var(--text);font-weight:600;border:1px solid var(--border)">Chunking</td>
+              <td style="padding:9px 14px;color:var(--muted);border:1px solid var(--border)">Fixed size, no overlap</td>
+              <td style="padding:9px 14px;color:var(--green);border:1px solid var(--border)">Semantic, sentence-aware, recursive with overlap</td>
+            </tr>
+            <tr style="background:var(--surface);border:1px solid var(--border)">
+              <td style="padding:9px 14px;color:var(--text);font-weight:600;border:1px solid var(--border)">Metadata</td>
+              <td style="padding:9px 14px;color:var(--muted);border:1px solid var(--border)">None stored</td>
+              <td style="padding:9px 14px;color:var(--green);border:1px solid var(--border)">Source, section, topic, page per chunk</td>
+            </tr>
+            <tr style="border:1px solid var(--border)">
+              <td style="padding:9px 14px;color:var(--text);font-weight:600;border:1px solid var(--border)">Query processing</td>
+              <td style="padding:9px 14px;color:var(--muted);border:1px solid var(--border)">Raw query used as-is</td>
+              <td style="padding:9px 14px;color:var(--green);border:1px solid var(--border)">Rewriting, HyDE, multi-query expansion</td>
+            </tr>
+            <tr style="background:var(--surface);border:1px solid var(--border)">
+              <td style="padding:9px 14px;color:var(--text);font-weight:600;border:1px solid var(--border)">Reranking</td>
+              <td style="padding:9px 14px;color:var(--muted);border:1px solid var(--border)">None — fused top-K is final</td>
+              <td style="padding:9px 14px;color:var(--green);border:1px solid var(--border)">Cross-encoder scores every candidate for precision</td>
+            </tr>
+            <tr style="border:1px solid var(--border)">
+              <td style="padding:9px 14px;color:var(--text);font-weight:600;border:1px solid var(--border)">Context prep</td>
+              <td style="padding:9px 14px;color:var(--muted);border:1px solid var(--border)">Raw chunks passed directly</td>
+              <td style="padding:9px 14px;color:var(--green);border:1px solid var(--border)">Deduplicated, compressed, reordered</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
@@ -360,7 +292,7 @@
           <li style="margin-bottom:6px">Building a quick prototype — each step adds latency and cost</li>
           <li style="margin-bottom:6px">Small, clean, well-structured document sets</li>
           <li style="margin-bottom:6px">Infrastructure budget is limited</li>
-          <li>Naive RAG has already been tested and proven sufficient</li>
+          <li>Hybrid RAG has already been tested and proven sufficient</li>
         </ul>
       </div>
     </div>
@@ -397,7 +329,7 @@
         </div>
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
           <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">Hybrid Search</div>
-          <div style="font-size:14px;color:var(--muted);line-height:1.7">Combines <strong style="color:var(--text)">dense retrieval</strong> (vector similarity — good at semantic meaning) with <strong style="color:var(--text)">sparse retrieval</strong> (keyword/BM25 — good at exact terms, names, codes). Results from both are fused using Reciprocal Rank Fusion (RRF), giving the best of both worlds. This app implements hybrid search in the Advanced and Hybrid RAG endpoints.</div>
+          <div style="font-size:14px;color:var(--muted);line-height:1.7">Combines <strong style="color:var(--text)">dense retrieval</strong> (vector similarity — good at semantic meaning) with <strong style="color:var(--text)">sparse retrieval</strong> (keyword/BM25 — good at exact terms, names, codes). Results from both are fused using Reciprocal Rank Fusion (RRF), giving the best of both worlds. This app implements hybrid search in both the Advanced and Hybrid RAG endpoints.</div>
         </div>
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
           <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">Cross-Encoder Reranking</div>
