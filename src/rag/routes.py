@@ -403,7 +403,13 @@ def advanced_rag(q: QueryRequest):
             {"step": "5. Generate", "detail": "Answer from rewritten query + re-ranked context"}
         )
         guardrail = _faithfulness_guardrail(ans, docs)
-        return {"answer": ans, "docs": docs, "steps": steps, "rewritten_query": rewritten, "guardrail": guardrail}
+        return {
+            "answer": ans,
+            "docs": docs,
+            "steps": steps,
+            "rewritten_query": rewritten,
+            "guardrail": guardrail,
+        }
     except RuntimeError as e:
         return JSONResponse(status_code=500, content={"detail": str(e)})
 
@@ -691,6 +697,7 @@ def _get_ragas_resources():
     if _ragas_llm is None:
         import anthropic as _anthropic
         from ragas.llms import llm_factory
+
         _ragas_llm = llm_factory(
             settings.haiku_model,
             provider="anthropic",
@@ -699,6 +706,7 @@ def _get_ragas_resources():
     if _ragas_embeddings is None:
         from langchain_community.embeddings import HuggingFaceEmbeddings
         from ragas.embeddings import LangchainEmbeddingsWrapper
+
         _ragas_embeddings = LangchainEmbeddingsWrapper(
             HuggingFaceEmbeddings(model_name=settings.embedding_model)
         )
