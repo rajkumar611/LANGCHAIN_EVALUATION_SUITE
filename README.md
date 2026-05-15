@@ -229,7 +229,6 @@ Full interactive docs: `http://localhost:8080/docs`
 | API | FastAPI + Uvicorn |
 | LLM | Anthropic Claude (`claude-sonnet-4-6`) |
 | Embeddings | `sentence-transformers/all-MiniLM-L6-v2` |
-| Dense Search | NumPy dot product (FAISS used in LangChain demo only) |
 | Sparse Search | TF-IDF / BM25 (scikit-learn) |
 | Evaluation | RAGAS (`ragas==0.4.x`) |
 | Graph | NetworkX |
