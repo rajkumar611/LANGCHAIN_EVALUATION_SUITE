@@ -8,7 +8,7 @@
       <span style="background:#14532d22;color:var(--green);border:1px solid var(--green);font-size:20px;font-weight:700;padding:4px 12px;border-radius:999px;letter-spacing:.05em">Vector + Keyword Fusion <span style="font-size:14px;font-weight:500;opacity:0.75">(Dense + Sparse Fusion)</span></span>
     </div>
     <p style="font-size:17px;color:var(--muted);line-height:1.8;margin-bottom:32px;">
-      Combines the strengths of two fundamentally different retrieval methods — dense vector search for semantic understanding and sparse BM25 (It's a smart keyword search algorithm) for exact keyword matching — then fuses their rankings with Reciprocal Rank Fusion.
+      Combines the strengths of two fundamentally different retrieval methods — dense vector search for semantic understanding and sparse BM25 keyword search for exact term matching — then fuses their rankings with Reciprocal Rank Fusion.
     </p>
 
     <!-- Pipeline -->
@@ -256,7 +256,7 @@
           <div style="font-size:14px;color:var(--muted);line-height:1.7">Uses embeddings to find chunks that are semantically similar to the query, even if they use different words. This app uses <code style="background:var(--bg);padding:1px 6px;border-radius:4px;font-size:13px">all-MiniLM-L6-v2</code> and a NumPy dot product — the same embedding model used across all RAG strategies.</div>
         </div>
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
-          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">Sparse Retrieval <span style="font-size:17px;font-weight:600;color:var(--amber);background:#78350f22;padding:2px 8px;border-radius:999px;margin-left:6px">TF-IDF BM25 (It's a smart keyword search algorithm) · keyword</span></div>
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">Sparse Retrieval <span style="font-size:17px;font-weight:600;color:var(--amber);background:#78350f22;padding:2px 8px;border-radius:999px;margin-left:6px">TF-IDF · BM25 · keyword</span></div>
           <div style="font-size:14px;color:var(--muted);line-height:1.7">Uses term frequency and inverse document frequency to score chunks that contain the exact words from the query. Excellent for technical terms, proper names, codes, or any string where the exact wording matters. This app uses scikit-learn's <code style="background:var(--bg);padding:1px 6px;border-radius:4px;font-size:13px">TfidfVectorizer</code>.</div>
         </div>
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
@@ -284,7 +284,7 @@
         <span id="hybrid-upload-status" style="font-size:13px;color:var(--muted)">No document loaded</span>
       </div>
 
-      <div style="font-size:17px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">User Prompt / Query</div>
+      <div style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">User Prompt / Query</div>
       <textarea id="hybrid-query" placeholder="e.g. What specific metrics or numbers are mentioned?" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:14px;font-family:inherit;line-height:1.8;resize:vertical;min-height:72px;outline:none;transition:border-color .15s;box-sizing:border-box" onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--border)'"></textarea>
 
       <button onclick="runHybridRAG()" style="margin-top:10px;padding:10px 24px;background:var(--blue);border:none;border-radius:8px;color:#fff;font:600 14px inherit;cursor:pointer;transition:opacity .15s" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
@@ -292,7 +292,7 @@
       </button>
 
       <div id="hybrid-result" style="display:none;margin-top:16px">
-        <div style="font-size:17px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Response</div>
+        <div style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Response</div>
         <div id="hybrid-answer" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;font-size:14px;color:var(--text);line-height:1.8;white-space:pre-wrap"></div>
         <div id="hybrid-chunks" style="margin-top:10px"></div>
       </div>

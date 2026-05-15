@@ -5,7 +5,8 @@ LLM calls are mocked so tests run without an Anthropic API key or network.
 
 import json
 import os
-from unittest.mock import patch
+from contextlib import ExitStack
+from unittest.mock import MagicMock, patch
 
 os.environ.setdefault("ANTHROPIC_API_KEY", "sk-test-dummy")
 
@@ -291,6 +292,27 @@ class TestHybridRag:
 
 
 # ── /rag/evaluate ─────────────────────────────────────────────────────────────
+def _make_ragas_result(scores: dict) -> MagicMock:
+    """Return a mock RAGAS evaluate() result with the given scores dict."""
+    result = MagicMock()
+    result.scores = [scores]
+    return result
+
+
+def _ragas_patches(scores: dict) -> list:
+    """All patches needed to isolate the RAGAS evaluation endpoint from real LLM calls."""
+    return [
+        patch("src.rag.routes._get_ragas_resources", return_value=(MagicMock(), MagicMock())),
+        patch("ragas.evaluate", return_value=_make_ragas_result(scores)),
+        patch("ragas.EvaluationDataset", MagicMock()),
+        patch("ragas.dataset_schema.SingleTurnSample", MagicMock()),
+        patch("ragas.metrics.collections.Faithfulness", MagicMock()),
+        patch("ragas.metrics.collections.AnswerRelevancy", MagicMock()),
+        patch("ragas.metrics.collections.ContextPrecision", MagicMock()),
+        patch("ragas.metrics.collections.AnswerCorrectness", MagicMock()),
+    ]
+
+
 class TestRagEvaluate:
     BASE_PAYLOAD = {
         "question": "What is RAG?",
@@ -298,39 +320,59 @@ class TestRagEvaluate:
         "contexts": ["RAG stands for Retrieval Augmented Generation."],
     }
 
-    def _mock_llm_score(self, prompt: str, max_tokens: int = 512) -> str:
-        return json.dumps({"score": 0.9, "reasoning": "Good answer.", "unsupported_claims": []})
+    _BASE_SCORES = {"faithfulness": 0.9, "answer_relevancy": 0.8}
+    _FULL_SCORES = {
+        "faithfulness": 0.9,
+        "answer_relevancy": 0.8,
+        "context_precision": 0.85,
+        "answer_correctness": 0.75,
+    }
 
     def test_returns_scores_dict(self, client):
-        with patch("src.rag.routes.llm", side_effect=self._mock_llm_score):
+        with ExitStack() as stack:
+            for p in _ragas_patches(self._BASE_SCORES):
+                stack.enter_context(p)
             resp = client.post("/rag/evaluate", json=self.BASE_PAYLOAD)
         assert resp.status_code == 200
         assert "scores" in resp.json()
 
-    def test_three_core_metrics_present(self, client):
-        with patch("src.rag.routes.llm", side_effect=self._mock_llm_score):
+    def test_two_core_metrics_without_ground_truth(self, client):
+        with ExitStack() as stack:
+            for p in _ragas_patches(self._BASE_SCORES):
+                stack.enter_context(p)
             resp = client.post("/rag/evaluate", json=self.BASE_PAYLOAD)
         scores = resp.json()["scores"]
         assert "faithfulness" in scores
         assert "answer_relevancy" in scores
+        assert "context_utilization" not in scores
+        assert "correctness" not in scores
+
+    def test_four_metrics_with_ground_truth(self, client):
+        payload = {**self.BASE_PAYLOAD, "ground_truth": "RAG is Retrieval Augmented Generation."}
+        with ExitStack() as stack:
+            for p in _ragas_patches(self._FULL_SCORES):
+                stack.enter_context(p)
+            resp = client.post("/rag/evaluate", json=payload)
+        scores = resp.json()["scores"]
+        assert "faithfulness" in scores
+        assert "answer_relevancy" in scores
         assert "context_utilization" in scores
+        assert "correctness" in scores
 
     def test_overall_is_average_of_scores(self, client):
-        with patch("src.rag.routes.llm", side_effect=self._mock_llm_score):
+        with ExitStack() as stack:
+            for p in _ragas_patches(self._BASE_SCORES):
+                stack.enter_context(p)
             resp = client.post("/rag/evaluate", json=self.BASE_PAYLOAD)
         data = resp.json()
         scores = list(data["scores"].values())
-        expected_overall = round(sum(scores) / len(scores), 3)
-        assert abs(data["overall"] - expected_overall) < 0.001
-
-    def test_correctness_added_when_ground_truth_given(self, client):
-        payload = {**self.BASE_PAYLOAD, "ground_truth": "RAG is Retrieval Augmented Generation."}
-        with patch("src.rag.routes.llm", side_effect=self._mock_llm_score):
-            resp = client.post("/rag/evaluate", json=payload)
-        assert "correctness" in resp.json()["scores"]
+        expected = round(sum(scores) / len(scores), 3)
+        assert abs(data["overall"] - expected) < 0.001
 
     def test_scores_bounded_zero_to_one(self, client):
-        with patch("src.rag.routes.llm", side_effect=self._mock_llm_score):
+        with ExitStack() as stack:
+            for p in _ragas_patches(self._BASE_SCORES):
+                stack.enter_context(p)
             resp = client.post("/rag/evaluate", json=self.BASE_PAYLOAD)
         for val in resp.json()["scores"].values():
             assert 0.0 <= val <= 1.0

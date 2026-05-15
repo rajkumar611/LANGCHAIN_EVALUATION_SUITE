@@ -11,8 +11,8 @@ An interactive FastAPI application demonstrating **5 RAG retrieval strategies** 
 Most RAG demos are toy examples. This project shows:
 - **Retrieval depth** — five strategies from naive to graph-based, each with visible pipeline steps
 - **Pass / Fail sample documents** — purpose-built documents that demonstrate exactly where each strategy succeeds and where it breaks down
-- **Evaluation** — LLM-as-Judge scoring across Faithfulness, Answer Relevancy, Context Utilization, and optional Correctness
-- **Production rigour** — typed config, structured logging, input validation, 53 tests, CI pipeline, Docker support
+- **Evaluation** — real [RAGAS](https://github.com/explodinggradients/ragas) library scoring across Faithfulness, Answer Relevancy, Context Precision, and optional Correctness
+- **Production rigour** — typed config, structured logging, input validation, 69 tests, CI pipeline, Docker support
 
 ---
 
@@ -61,16 +61,18 @@ Each strategy page explains the pipeline visually, shows step-by-step execution 
 
 ---
 
-## RAG Evaluation (LLM-as-Judge)
+## RAG Evaluation (RAGAS)
 
-Four RAGAS-aligned metrics evaluated by Claude:
+Powered by the real [ragas](https://github.com/explodinggradients/ragas) library (v0.4.x) with Claude as the judge LLM. Four metrics across two modes:
 
-| Metric | What It Measures |
-|---|---|
-| **Faithfulness** | Is the answer grounded in the retrieved context? (hallucination detection) |
-| **Answer Relevancy** | Does the answer address the question that was asked? |
-| **Context Utilization** | Did the retrieved chunks actually contain the right information? |
-| **Correctness** *(optional)* | Accuracy against a known ground truth answer |
+| Metric | When scored | What It Measures |
+|---|---|---|
+| **Faithfulness** | Always | Is the answer grounded in the retrieved context? (hallucination detection) |
+| **Answer Relevancy** | Always | Does the answer address the question that was asked? |
+| **Context Precision** | With ground truth | Did the retrieved chunks actually contain the right information? |
+| **Answer Correctness** | With ground truth | Accuracy against a known reference answer (F1-style claim comparison) |
+
+RAGAS uses Claude via `llm_factory(provider="anthropic")` and the same `all-MiniLM-L6-v2` embeddings used throughout the app. Resources are lazily initialised on the first evaluation call.
 
 ---
 
@@ -129,9 +131,9 @@ python -m pytest tests/ -v
 Tests run fully offline — all LLM calls are mocked. No API key required.
 
 ```
-tests/test_rag_utils.py      # 16 unit tests: chunk_text, vector_search, bm25_search, reciprocal_rank_fusion
-tests/test_rag_endpoints.py  # 37 integration tests: /upload, /rag/naive, /rag/advanced, /rag/agentic,
-                             #                       /rag/hybrid, /rag/graph, /rag/evaluate
+tests/test_rag_utils.py      # 25 unit tests: chunk_text, vector_search, bm25_search, reciprocal_rank_fusion, ctx_prompt
+tests/test_rag_endpoints.py  # 44 integration tests: /upload, /rag/naive, /rag/advanced, /rag/agentic,
+                             #                       /rag/hybrid, /rag/graph, /rag/evaluate (RAGAS mocked)
 ```
 
 ---
@@ -209,7 +211,7 @@ Full interactive docs: `http://localhost:8080/docs`
 
 ## Key Design Decisions
 
-- **LLM-as-Judge over RAGAS library** — avoids heavy dependencies; the same evaluation principle implemented directly with the Anthropic SDK
+- **Real RAGAS evaluation** — uses the `ragas==0.4.x` library with Claude as the judge LLM; resources are lazily initialised on the first `/rag/evaluate` call so startup is fast
 - **All state in-memory** — intentional for simplicity; upload a document before querying (state resets on server restart)
 - **Typed config** — `src/config.py` (pydantic-settings) validates all env vars at startup; the app exits immediately with a clear message if `ANTHROPIC_API_KEY` is missing
 - **Pass / Fail sample documents** — each strategy ships with documents designed to expose the strategy's specific failure mode, not just documents that work
@@ -225,12 +227,24 @@ Full interactive docs: `http://localhost:8080/docs`
 | Embeddings | `sentence-transformers/all-MiniLM-L6-v2` |
 | Dense Search | NumPy dot product (FAISS used in LangChain demo only) |
 | Sparse Search | TF-IDF / BM25 (scikit-learn) |
+| Evaluation | RAGAS (`ragas==0.4.x`) |
 | Graph | NetworkX |
 | Config | Pydantic Settings |
 | Observability | Structured logging |
 | Testing | pytest + FastAPI TestClient |
 | Containerisation | Docker (multi-stage) + Docker Compose |
 | CI | GitHub Actions |
+
+---
+
+## Future Enhancements
+
+### Citations
+Currently, retrieved chunks are displayed alongside every answer, but the chunks themselves carry no information about which file they came from or where in that file they appeared. In a production system serving end users who only see the final answer, this is a gap — there is no way to trace a claim back to its source document.
+
+The planned change is: at upload time, tag each chunk with its source filename and position. Pass that metadata through retrieval so every chunk in the response carries a `source` field. Update the LLM prompt to instruct inline citation markers (`[1]`, `[2]`), and show the filename on each chunk card in the UI.
+
+This becomes essential when multiple documents are uploaded simultaneously or when the app is used in domains where every claim must be verifiable.
 
 ---
 

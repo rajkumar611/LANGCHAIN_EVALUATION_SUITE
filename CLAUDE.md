@@ -26,7 +26,7 @@ docker compose up          # reads .env, sets ENV=production, healthchecks /heal
 ### Tests
 
 ```bash
-python -m pytest tests/ -v     # 53 tests, all LLM calls mocked, no API key needed
+python -m pytest tests/ -v     # 69 tests, all LLM/RAGAS calls mocked, no API key needed
 ```
 
 ## Architecture
@@ -44,8 +44,8 @@ frontend/
   index.html                            ← entire SPA (single file)
 tests/
   conftest.py                           ← shared fixtures: client, sample_text, uploaded_client
-  test_rag_utils.py                     ← 16 unit tests for chunking + retrieval utilities
-  test_rag_endpoints.py                 ← 37 endpoint integration tests (LLM mocked)
+  test_rag_utils.py                     ← 25 unit tests for chunking + retrieval utilities
+  test_rag_endpoints.py                 ← 44 endpoint integration tests (LLM + RAGAS mocked)
 Dockerfile                              ← multi-stage build; pre-downloads embedding model
 docker-compose.yml                      ← local dev; healthcheck wired to /health
 pyproject.toml                          ← pytest, ruff, mypy config
@@ -81,7 +81,7 @@ Global in-memory state holds the uploaded document corpus — **reset on every s
 | `POST /rag/agentic` | Tool-calling agent that searches iteratively (up to `max_search_rounds`) |
 | `POST /rag/hybrid` | Dense (FAISS cosine) + sparse (TF-IDF BM25) fused via RRF |
 | `POST /rag/graph` | Seed retrieval + 2-hop BFS on a sequential graph → re-score |
-| `POST /rag/evaluate` | LLM-as-Judge: Faithfulness, Answer Relevancy, Context Utilization, optional Correctness |
+| `POST /rag/evaluate` | RAGAS evaluation: Faithfulness + Answer Relevancy always; Context Precision + Answer Correctness when `ground_truth` is provided |
 
 **Shared utilities** (all have docstrings):
 
@@ -95,10 +95,13 @@ Global in-memory state holds the uploaded document corpus — **reset on every s
 | `rebuild_indexes(docs)` | Rebuilds all globals from a new doc list |
 | `no_docs_response()` | Standard response when no document is uploaded |
 | `ctx_prompt(docs, question)` | Builds the RAG context+question prompt |
+| `_get_ragas_resources()` | Lazily initialises and caches RAGAS LLM + embeddings wrappers (called on first `/rag/evaluate` request) |
 
 **Request models**: `QueryRequest` (field: `query`), `EvaluationRequest` (fields: `question`, `answer`, `contexts`, `ground_truth`).
 
-Global state: `DOCS`, `DOC_EMBS`, `TFIDF_MAT`, `G`, `embedder` (`all-MiniLM-L6-v2`, 384-dim), `tfidf`.
+Global state: `DOCS`, `DOC_EMBS`, `TFIDF_MAT`, `G`, `embedder` (`all-MiniLM-L6-v2`, 384-dim), `tfidf`, `_ragas_llm`, `_ragas_embeddings`.
+
+**RAGAS evaluation** (`POST /rag/evaluate`) uses the real [ragas](https://github.com/explodinggradients/ragas) library (v0.4.x) with Claude as the judge LLM via `llm_factory(model, provider="anthropic", client=Anthropic(...))`. Resources are lazily initialised on the first call. Response keys map RAGAS metric names: `context_precision` → `context_utilization`, `answer_correctness` → `correctness`.
 
 ## LangChain module (`src/langchain_orchestration/routes.py`)
 
@@ -148,3 +151,10 @@ All LangChain imports are deferred (inside each route function) — keeps startu
 4. Wrap the body in `try/except RuntimeError` → `JSONResponse(500)`.
 5. Use `vector_search`, `bm25_search`, `reciprocal_rank_fusion`, `llm`, `ctx_prompt` — don't duplicate logic.
 6. Add endpoint tests to `tests/test_rag_endpoints.py` — mock `src.rag.routes.llm` with `unittest.mock.patch`.
+
+## Testing the evaluation endpoint
+
+`/rag/evaluate` uses the real RAGAS library. Tests must mock both the RAGAS resources and the `evaluate()` call. See `_ragas_patches()` helper in `test_rag_endpoints.py` for the required set of patches:
+- `src.rag.routes._get_ragas_resources` — returns `(MagicMock(), MagicMock())`
+- `ragas.evaluate` — returns a mock result with `.scores = [dict]`
+- Metric classes (`ragas.metrics.collections.*`) — replaced with `MagicMock()` to bypass LLM type validation in their constructors
