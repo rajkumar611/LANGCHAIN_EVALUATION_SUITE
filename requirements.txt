@@ -17,6 +17,9 @@ langchain-text-splitters==1.1.2
 langgraph==1.1.9
 langsmith==0.7.35
 
+# ── RAG Evaluation ────────────────────────────────────────────────────────────
+ragas==0.4.3
+
 # ── Vector search & embeddings ────────────────────────────────────────────────
 faiss-cpu==1.13.2
 sentence-transformers==5.4.1

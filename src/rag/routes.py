@@ -543,127 +543,96 @@ def graph_rag(q: QueryRequest):
 
 
 # ════════════════════════════════════════════════════════════════════════════════
-# 6 · RAG EVALUATION  (LLM-as-Judge)
+# 6 · RAG EVALUATION  (RAGAS)
 # ════════════════════════════════════════════════════════════════════════════════
-def _parse_score(raw: str) -> dict:
-    """Extract a JSON object from an LLM response, falling back gracefully."""
-    try:
-        match = re.search(r"\{.*\}", raw, re.DOTALL)
-        return json.loads(match.group()) if match else {"score": 0.0, "reasoning": "Parse error"}
-    except Exception as e:
-        logger.warning("Score parse failed (raw=%r): %s", raw[:100], e)
-        return {"score": 0.0, "reasoning": "Parse error"}
+
+# Lazily initialised RAGAS resources (created on first /rag/evaluate call)
+_ragas_llm = None
+_ragas_embeddings = None
+
+
+def _get_ragas_resources():
+    """Lazily create and cache RAGAS LLM and embeddings wrappers."""
+    global _ragas_llm, _ragas_embeddings
+    if _ragas_llm is None:
+        import anthropic as _anthropic
+        from ragas.llms import llm_factory
+        _ragas_llm = llm_factory(
+            settings.haiku_model,
+            provider="anthropic",
+            client=_anthropic.Anthropic(api_key=settings.anthropic_api_key),
+        )
+    if _ragas_embeddings is None:
+        from langchain_community.embeddings import HuggingFaceEmbeddings
+        from ragas.embeddings import LangchainEmbeddingsWrapper
+        _ragas_embeddings = LangchainEmbeddingsWrapper(
+            HuggingFaceEmbeddings(model_name=settings.embedding_model)
+        )
+    return _ragas_llm, _ragas_embeddings
 
 
 @router.post("/rag/evaluate")
 def rag_evaluate(req: EvaluationRequest):
-    """LLM-as-Judge evaluation across four RAG quality dimensions.
+    """RAGAS evaluation across up to four RAG quality dimensions.
 
-    Scores: Faithfulness (no hallucination), Answer Relevancy (on-topic),
-    Context Utilization (right chunks retrieved), and optionally Correctness
-    (vs ground truth). Returns per-metric scores plus an overall average.
+    Always scored: Faithfulness, Answer Relevancy.
+    Scored when ground_truth is provided: Context Precision, Answer Correctness.
+    Uses the real RAGAS library (ragas==0.4.x) with Claude as the judge LLM.
     """
-    ctx_block = "\n".join(f"[{i + 1}] {c}" for i, c in enumerate(req.contexts))
-
-    faithfulness_prompt = f"""You are an expert RAG evaluator. Score the FAITHFULNESS of the answer.
-
-FAITHFULNESS: Does the answer contain ONLY information that is present in the retrieved context?
-Penalise any claim not supported by the context (hallucination).
-
-Retrieved Context:
-{ctx_block}
-
-Answer:
-{req.answer}
-
-Return a JSON object with exactly these keys:
-- score: float between 0.0 and 1.0
-- reasoning: one sentence explanation
-- unsupported_claims: list of any claims not found in context (empty list if none)
-
-JSON only, no extra text."""
-
-    relevancy_prompt = f"""You are an expert RAG evaluator. Score the ANSWER RELEVANCY.
-
-ANSWER RELEVANCY: Does the answer directly address what the question is asking?
-A high score means the answer is on-topic and complete. Penalise off-topic or incomplete answers.
-
-Question: {req.question}
-Answer: {req.answer}
-
-Return a JSON object with exactly these keys:
-- score: float between 0.0 and 1.0
-- reasoning: one sentence explanation
-
-JSON only, no extra text."""
-
-    context_prompt = f"""You are an expert RAG evaluator. Score the CONTEXT UTILIZATION.
-
-CONTEXT UTILIZATION: Did the retrieved context actually contain the information needed to answer the question?
-A high score means the context was relevant and sufficient. A low score means the wrong chunks were retrieved.
-
-Question: {req.question}
-
-Retrieved Context:
-{ctx_block}
-
-Return a JSON object with exactly these keys:
-- score: float between 0.0 and 1.0
-- reasoning: one sentence explanation
-- missing_information: what key information was absent from the context (empty string if nothing missing)
-
-JSON only, no extra text."""
-
     try:
-        faithfulness = _parse_score(llm(faithfulness_prompt, max_tokens=300))
-        relevancy = _parse_score(llm(relevancy_prompt, max_tokens=200))
-        context_util = _parse_score(llm(context_prompt, max_tokens=200))
-    except RuntimeError as e:
+        from ragas import evaluate, EvaluationDataset
+        from ragas.dataset_schema import SingleTurnSample
+        from ragas.metrics.collections import (
+            AnswerCorrectness,
+            AnswerRelevancy,
+            ContextPrecision,
+            Faithfulness,
+        )
+
+        ragas_llm, ragas_emb = _get_ragas_resources()
+
+        sample = SingleTurnSample(
+            user_input=req.question,
+            response=req.answer,
+            retrieved_contexts=req.contexts,
+            reference=req.ground_truth if req.ground_truth else None,
+        )
+        dataset = EvaluationDataset(samples=[sample])
+
+        metrics = [
+            Faithfulness(llm=ragas_llm),
+            AnswerRelevancy(llm=ragas_llm, embeddings=ragas_emb),
+        ]
+        if req.ground_truth:
+            metrics += [
+                ContextPrecision(llm=ragas_llm),
+                AnswerCorrectness(llm=ragas_llm),
+            ]
+
+        result = evaluate(dataset=dataset, metrics=metrics, show_progress=False)
+        raw = result.scores[0]
+
+        scores: dict = {
+            "faithfulness": round(float(raw.get("faithfulness", 0.0)), 3),
+            "answer_relevancy": round(float(raw.get("answer_relevancy", 0.0)), 3),
+        }
+        if req.ground_truth:
+            scores["context_utilization"] = round(float(raw.get("context_precision", 0.0)), 3)
+            scores["correctness"] = round(float(raw.get("answer_correctness", 0.0)), 3)
+
+        overall = round(sum(scores.values()) / len(scores), 3)
+
+        return {
+            "scores": scores,
+            "overall": overall,
+            "details": {k: {"score": v, "reasoning": ""} for k, v in scores.items()},
+            "inputs": {
+                "question": req.question,
+                "answer": req.answer,
+                "context_count": len(req.contexts),
+                "has_ground_truth": bool(req.ground_truth),
+            },
+        }
+    except Exception as e:
+        logger.error("RAGAS evaluation failed: %s", e)
         return JSONResponse(status_code=500, content={"detail": str(e)})
-
-    scores = {
-        "faithfulness": round(faithfulness.get("score", 0.0), 3),
-        "answer_relevancy": round(relevancy.get("score", 0.0), 3),
-        "context_utilization": round(context_util.get("score", 0.0), 3),
-    }
-
-    if req.ground_truth:
-        correctness_prompt = f"""You are an expert RAG evaluator. Score the CORRECTNESS of the answer.
-
-CORRECTNESS: Compare the generated answer to the ground truth.
-Score 1.0 if fully correct, 0.5 if partially correct, 0.0 if wrong.
-
-Question: {req.question}
-Ground Truth: {req.ground_truth}
-Generated Answer: {req.answer}
-
-Return a JSON object with exactly these keys:
-- score: float between 0.0 and 1.0
-- reasoning: one sentence explanation
-
-JSON only, no extra text."""
-        try:
-            scores["correctness"] = round(
-                _parse_score(llm(correctness_prompt, max_tokens=200)).get("score", 0.0), 3
-            )
-        except RuntimeError as e:
-            logger.warning("Correctness scoring failed: %s", e)
-            scores["correctness"] = 0.0
-
-    overall = round(sum(scores.values()) / len(scores), 3)
-
-    return {
-        "scores": scores,
-        "overall": overall,
-        "details": {
-            "faithfulness": faithfulness,
-            "answer_relevancy": relevancy,
-            "context_utilization": context_util,
-        },
-        "inputs": {
-            "question": req.question,
-            "answer": req.answer,
-            "context_count": len(req.contexts),
-            "has_ground_truth": bool(req.ground_truth),
-        },
-    }

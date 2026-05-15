@@ -2173,6 +2173,10 @@ async function runAdvancedRAG() {
       stepsEl.innerHTML = `<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Pipeline Steps</div>` +
         d.steps.map(s => `<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-size:12px;color:var(--muted);margin-bottom:6px"><span style="color:var(--amber);font-weight:700">${s.step}</span>  ${s.detail}</div>`).join('');
     }
+    if (d.docs && d.docs.length) {
+      stepsEl.innerHTML += `<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:12px;margin-bottom:8px">Retrieved Context Chunks (${d.docs.length})</div>` +
+        d.docs.map((c, i) => `<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:6px"><span style="color:var(--blue);font-weight:700">Chunk ${i+1}</span><span style="color:var(--muted);font-size:11px;margin-left:8px">score: ${c.score ?? ''}</span><br>${c.text ?? c}</div>`).join('');
+    }
   } catch (e) {
     answerEl.textContent = 'Error: ' + e.message;
   }
@@ -2220,9 +2224,9 @@ async function runNaiveRAG() {
     });
     const d = await r.json();
     answerEl.textContent = d.answer || d.detail || JSON.stringify(d);
-    if (d.chunks && d.chunks.length) {
-      chunksEl.innerHTML = `<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Retrieved Chunks (${d.chunks.length})</div>` +
-        d.chunks.map((c, i) => `<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:6px"><span style="color:var(--blue);font-weight:700">Chunk ${i+1}</span>  ${c}</div>`).join('');
+    if (d.docs && d.docs.length) {
+      chunksEl.innerHTML = `<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Retrieved Context Chunks (${d.docs.length})</div>` +
+        d.docs.map((c, i) => `<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:6px"><span style="color:var(--blue);font-weight:700">Chunk ${i+1}</span><span style="color:var(--muted);font-size:11px;margin-left:8px">score: ${c.score ?? ''}</span><br>${c.text ?? c}</div>`).join('');
     }
   } catch (e) {
     answerEl.textContent = 'Error: ' + e.message;
@@ -2262,9 +2266,9 @@ async function _sharedRun(queryId, resultId, answerId, stepsId, endpoint) {
       document.getElementById(stepsId).innerHTML = '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Pipeline Steps</div>' +
         d.steps.map(s=>`<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-size:12px;color:var(--muted);margin-bottom:6px"><span style="color:var(--amber);font-weight:700">${s.step}</span>  ${s.detail}</div>`).join('');
     }
-    if (stepsId && d.chunks?.length) {
-      document.getElementById(stepsId).innerHTML = '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Retrieved Chunks</div>' +
-        d.chunks.map((c,i)=>`<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:6px"><span style="color:var(--blue);font-weight:700">Chunk ${i+1}</span>  ${c}</div>`).join('');
+    if (stepsId && d.docs?.length) {
+      document.getElementById(stepsId).innerHTML += '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:12px;margin-bottom:8px">Retrieved Context Chunks (' + d.docs.length + ')</div>' +
+        d.docs.map((c,i)=>`<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:6px"><span style="color:var(--blue);font-weight:700">Chunk ${i+1}</span><span style="color:var(--muted);font-size:11px;margin-left:8px">score: ${c.score??''}</span><br>${c.text??c}</div>`).join('');
     }
   } catch(e) { answerEl.textContent='Error: '+e.message; }
 }
