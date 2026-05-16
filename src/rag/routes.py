@@ -695,13 +695,14 @@ def _get_ragas_resources():
     """Lazily create and cache RAGAS LLM and embeddings wrappers."""
     global _ragas_llm, _ragas_embeddings
     if _ragas_llm is None:
-        import anthropic as _anthropic
-        from ragas.llms import llm_factory
+        from langchain_anthropic import ChatAnthropic
+        from ragas.llms import _LangchainLLMWrapper
 
-        _ragas_llm = llm_factory(
-            settings.haiku_model,
-            provider="anthropic",
-            client=_anthropic.Anthropic(api_key=settings.anthropic_api_key),
+        _ragas_llm = _LangchainLLMWrapper(
+            langchain_llm=ChatAnthropic(
+                model=settings.haiku_model,
+                api_key=settings.anthropic_api_key,
+            )
         )
     if _ragas_embeddings is None:
         from langchain_community.embeddings import HuggingFaceEmbeddings
@@ -724,12 +725,10 @@ def rag_evaluate(req: EvaluationRequest):
     try:
         from ragas import EvaluationDataset, evaluate
         from ragas.dataset_schema import SingleTurnSample
-        from ragas.metrics.collections import (
-            AnswerCorrectness,
-            AnswerRelevancy,
-            ContextPrecision,
-            Faithfulness,
-        )
+        from ragas.metrics._answer_correctness import AnswerCorrectness
+        from ragas.metrics._answer_relevance import AnswerRelevancy
+        from ragas.metrics._context_precision import ContextPrecision
+        from ragas.metrics._faithfulness import Faithfulness
 
         ragas_llm, ragas_emb = _get_ragas_resources()
 
@@ -741,15 +740,21 @@ def rag_evaluate(req: EvaluationRequest):
         )
         dataset = EvaluationDataset(samples=[sample])
 
-        metrics = [
-            Faithfulness(llm=ragas_llm),
-            AnswerRelevancy(llm=ragas_llm, embeddings=ragas_emb),
-        ]
+        faith = Faithfulness()
+        faith.llm = ragas_llm
+
+        ar = AnswerRelevancy(embeddings=ragas_emb)
+        ar.llm = ragas_llm
+
+        metrics = [faith, ar]
         if req.ground_truth:
-            metrics += [
-                ContextPrecision(llm=ragas_llm),
-                AnswerCorrectness(llm=ragas_llm),
-            ]
+            cp = ContextPrecision()
+            cp.llm = ragas_llm
+
+            ac = AnswerCorrectness(embeddings=ragas_emb)
+            ac.llm = ragas_llm
+
+            metrics += [cp, ac]
 
         result = evaluate(dataset=dataset, metrics=metrics, show_progress=False)
         raw = result.scores[0]

@@ -50,6 +50,7 @@ async function runEval() {
       body: JSON.stringify({question, answer, contexts, ground_truth: groundTruth}),
     });
     const data = await resp.json();
+    if (!resp.ok) throw new Error(data.detail || `Server error ${resp.status}`);
     const scoreColor = s => s >= 0.8 ? 'var(--green)' : s >= 0.5 ? 'var(--amber)' : 'var(--red)';
     const scoreBar = s => {
       const pct = Math.round(s * 100);
