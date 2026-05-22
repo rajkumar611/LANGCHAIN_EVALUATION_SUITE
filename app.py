@@ -5,24 +5,27 @@ Run via: python main.py
 import logging
 import os
 import time
+
 from fastapi import FastAPI
-from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from src.config import settings
+from src.langchain_orchestration import LC_SESSIONS, router as lc_router
+
+# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s  %(levelname)-8s  %(name)s — %(message)s",
     datefmt="%H:%M:%S",
 )
+logger = logging.getLogger(__name__)
 
 # Enable LangSmith tracing when API key is present
 if os.getenv("LANGCHAIN_API_KEY"):
     os.environ.setdefault("LANGCHAIN_TRACING_V2", "true")
     os.environ.setdefault("LANGCHAIN_PROJECT", "langchain-evaluation-suite")
-
-from src.config import settings
-from src.langchain_orchestration import router as lc_router, LC_SESSIONS
 
 _START_TIME = time.time()
 
@@ -34,16 +37,16 @@ app.mount("/pages", StaticFiles(directory="frontend/pages"), name="pages")
 
 
 @app.get("/")
-def root():
+def root() -> FileResponse:
     return FileResponse("frontend/index.html")
 
 
 @app.get("/health")
-def health():
+def health() -> dict:
     """Liveness probe — returns runtime state without calling any external service."""
     return {
-        "status":          "ok",
-        "uptime_seconds":  round(time.time() - _START_TIME, 1),
+        "status": "ok",
+        "uptime_seconds": round(time.time() - _START_TIME, 1),
         "active_sessions": len(LC_SESSIONS),
         "models": {
             "langchain": settings.haiku_model,
