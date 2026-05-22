@@ -5,10 +5,11 @@ Run via: python main.py
 import logging
 import os
 import time
+from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from src.config import settings
@@ -52,3 +53,39 @@ def health() -> dict:
             "langchain": settings.haiku_model,
         },
     }
+
+
+@app.get("/api/patterns/{pattern_name}/explanation")
+def get_pattern_explanation(pattern_name: str) -> dict:
+    """Fetch the explanation markdown for a specific LangChain pattern."""
+    # Validate pattern name to prevent directory traversal
+    valid_patterns = {
+        "prompt": "01_prompt.md",
+        "chaining": "02_chaining.md",
+        "rag": "03_rag.md",
+        "memory": "04_memory.md",
+        "tools": "05_tools.md",
+        "documents": "06_documents.md",
+        "parsers": "07_parsers.md",
+        "agent": "08_agent.md",
+        "multiagent": "09_multiagent.md",
+        "langgraph": "10_langgraph.md",
+    }
+
+    if pattern_name not in valid_patterns:
+        raise HTTPException(status_code=404, detail="Pattern not found")
+
+    file_path = Path("docs/patterns") / valid_patterns[pattern_name]
+
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Explanation file not found")
+
+    try:
+        content = file_path.read_text(encoding="utf-8")
+        return {
+            "pattern": pattern_name,
+            "content": content,
+        }
+    except Exception as e:
+        logger.error(f"Error reading explanation file: {e}")
+        raise HTTPException(status_code=500, detail="Failed to read explanation")
