@@ -20,10 +20,7 @@ COPY app.py main.py ./
 COPY src/ src/
 COPY frontend/ frontend/
 
-# Pre-download the embedding model so first startup is instant
-RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
-
-EXPOSE 8080
+EXPOSE 8081
 
 # Disable reload in container; set ENV=production via docker run -e or compose
 ENV ENV=production

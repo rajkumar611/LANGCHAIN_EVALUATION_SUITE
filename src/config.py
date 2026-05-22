@@ -18,20 +18,10 @@ class Settings(BaseSettings):
     anthropic_api_key: str
 
     # ── Models ────────────────────────────────────────────────────────────────
-    sonnet_model: str = "claude-sonnet-4-6"
     haiku_model: str = "claude-haiku-4-5-20251001"
-    embedding_model: str = "all-MiniLM-L6-v2"
-
-    # ── RAG limits ────────────────────────────────────────────────────────────
-    max_chunks: int = 300
-    max_chunk_chars: int = 400
-    max_search_rounds: int = 2  # agentic RAG: max tool-call iterations
-
-    # ── Guardrails ────────────────────────────────────────────────────────────
-    faithfulness_threshold: float = 0.7  # below this the answer gets an amber warning
 
     # ── Server ────────────────────────────────────────────────────────────────
-    port: int = 8080
+    port: int = 8081
     env: str = "development"  # set to "production" to disable reload
 
     # ── LangSmith (optional) ──────────────────────────────────────────────────

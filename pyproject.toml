@@ -1,7 +1,7 @@
 [project]
-name = "rag-evaluation-suite"
+name = "langchain-evaluation-suite"
 version = "1.0.0"
-description = "FastAPI demo of 5 RAG strategies, 10 LangChain patterns, and LLM-as-Judge evaluation"
+description = "FastAPI demo of 10 LangChain orchestration patterns with LangGraph"
 requires-python = ">=3.11"
 
 # ── pytest ────────────────────────────────────────────────────────────────────

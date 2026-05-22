@@ -6,7 +6,6 @@ __pycache__/
 *.pyo
 .venv/
 venv/
-tests/
 *.md
 .dockerignore
 Dockerfile

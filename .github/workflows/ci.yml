@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  test:
+  lint:
     runs-on: ubuntu-latest
 
     steps:
@@ -22,28 +22,11 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Run tests
-        env:
-          ANTHROPIC_API_KEY: sk-test-dummy
-        run: python -m pytest tests/ -v --tb=short
-
-  lint:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: pip
-
-      - name: Install ruff
-        run: pip install ruff
-
       - name: Lint
-        run: ruff check src/ tests/
+        run: ruff check src/
 
       - name: Format check
-        run: ruff format --check src/ tests/
+        run: ruff format --check src/
+
+      - name: Run tests
+        run: pytest tests/ -v

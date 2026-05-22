@@ -14,10 +14,6 @@ env/
 dist/
 build/
 
-# FAISS index files (auto-rebuilt on startup)
-*.faiss
-*.pkl
-
 # OS
 .DS_Store
 Thumbs.db

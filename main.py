@@ -1,6 +1,6 @@
 """
-RAG Evaluation Suite — startup
-Run: python main.py   then open http://localhost:8080
+LangChain Evaluation Suite — startup
+Run: python main.py   then open http://localhost:8081
 """
 import os
 import sys

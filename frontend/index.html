@@ -3,113 +3,330 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>RAG Evaluation Suite</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3Cpath d='M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83'/%3E%3C/svg%3E">
+<title>LangChain Evaluation Suite</title>
 <link rel="stylesheet" href="/pages/styles.css">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+
+  .container { display: flex; height: 100vh; }
+  .sidebar { width: 260px; background: var(--surface); border-right: 1px solid var(--border); overflow-y: auto; padding: 0; }
+  .content { flex: 1; display: flex; flex-direction: column; }
+
+  header { background: var(--bg); border-bottom: 1px solid var(--border); padding: 16px 24px; display: flex; align-items: center; gap: 12px; }
+  header svg { width: 22px; height: 22px; stroke: #3b82f6; }
+  header span { font-size: 16px; font-weight: 700; }
+
+  .sidebar-header { padding: 20px 16px; border-bottom: 1px solid var(--border); }
+  .sidebar-header h2 { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+  .sidebar-menu { padding: 8px 0; }
+  .menu-item { display: block; width: 100%; text-align: left; background: none; border: none; padding: 10px 16px; color: var(--muted); font-size: 14px; cursor: pointer; transition: all 0.15s; }
+  .menu-item:hover { background: var(--bg); color: var(--blue); }
+  .menu-item.active { background: rgba(59, 130, 246, 0.1); color: var(--blue); font-weight: 600; border-left: 3px solid var(--blue); padding-left: 13px; }
+
+  .page { flex: 1; overflow-y: auto; padding: 40px; }
+  .page-title { font-size: 32px; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.5px; }
+  .page-desc { font-size: 15px; color: var(--muted); margin-bottom: 32px; line-height: 1.6; }
+
+  .demo-form { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 24px; }
+  .form-group { display: flex; flex-direction: column; }
+  .form-group label { font-weight: 600; font-size: 14px; margin-bottom: 10px; color: var(--text); }
+  .form-group textarea { padding: 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); font-family: inherit; font-size: 14px; resize: vertical; min-height: 120px; }
+  .form-group textarea:focus { outline: none; border-color: var(--blue); }
+  .form-group button { padding: 10px 20px; background: var(--blue); color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; margin-top: 12px; font-size: 14px; transition: opacity 0.15s; }
+  .form-group button:hover { opacity: 0.9; }
+  .form-group button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  .output { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 16px; min-height: 200px; font-size: 13px; font-family: 'Monaco', 'Menlo', 'Courier New', monospace; white-space: pre-wrap; word-break: break-word; overflow-y: auto; color: var(--text); display: none; }
+  .output.visible { display: block; }
+
+  .home-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 24px; }
+  .home-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; cursor: pointer; transition: all 0.15s; }
+  .home-card:hover { border-color: var(--blue); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1); }
+  .home-card h3 { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+  .home-card p { font-size: 13px; color: var(--muted); line-height: 1.5; }
+
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+</style>
 </head>
 <body>
 
-<!-- Header -->
-<header>
-  <button onclick="toggleSidebar()" title="Toggle sidebar" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);cursor:pointer;padding:5px 8px;display:flex;align-items:center;gap:3px;transition:all .15s" onmouseover="this.style.borderColor='#3b82f6';this.style.color='#3b82f6'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
-    <span style="display:block;width:14px;height:2px;background:currentColor;border-radius:2px;box-shadow:0 4px 0 currentColor, 0 -4px 0 currentColor"></span>
-  </button>
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2">
-    <circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
-  </svg>
-  <span style="font-size:15px;font-weight:700;letter-spacing:-0.2px">RAG Evaluation Platform</span>
-</header>
+<div class="container">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h2>LangChain Evaluation Suite</h2>
+    </div>
+    <div class="sidebar-menu">
+      <button class="menu-item active" onclick="showHome()">Overview</button>
+      <button class="menu-item" onclick="showDemo('prompt')"><span style="font-weight:700;color:var(--blue)">01.</span> Prompt Templates</button>
+      <button class="menu-item" onclick="showDemo('chaining')"><span style="font-weight:700;color:var(--blue)">02.</span> Chaining</button>
+      <button class="menu-item" onclick="showDemo('rag')"><span style="font-weight:700;color:var(--blue)">03.</span> RAG</button>
+      <button class="menu-item" onclick="showDemo('memory')"><span style="font-weight:700;color:var(--blue)">04.</span> Memory & Sessions</button>
+      <button class="menu-item" onclick="showDemo('tools')"><span style="font-weight:700;color:var(--blue)">05.</span> Tool Calling</button>
+      <button class="menu-item" onclick="showDemo('documents')"><span style="font-weight:700;color:var(--blue)">06.</span> Text Splitting</button>
+      <button class="menu-item" onclick="showDemo('parsers')"><span style="font-weight:700;color:var(--blue)">07.</span> Output Parsing</button>
+      <button class="menu-item" onclick="showDemo('agent')"><span style="font-weight:700;color:var(--blue)">08.</span> Agents</button>
+      <button class="menu-item" onclick="showDemo('multiagent')"><span style="font-weight:700;color:var(--blue)">09.</span> Multi-Agent</button>
+      <button class="menu-item" onclick="showDemo('langgraph')"><span style="font-weight:700;color:var(--blue)">10.</span> LangGraph</button>
+    </div>
+  </aside>
 
-<div class="app-body">
+  <!-- MAIN CONTENT -->
+  <div class="content">
+    <header>
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" style="width:20px;height:20px;stroke:#3b82f6;">
+        <circle cx="12" cy="12" r="3"></circle>
+        <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"></path>
+      </svg>
+    </header>
 
-<!-- ══ SIDEBAR ══ -->
-<aside class="sidebar">
-  <div class="sidebar-section-label">Overview</div>
-  <button class="toc-link active" id="toc-home" onclick="showHome()">
-    <span class="toc-dot"></span> Home
-  </button>
+    <!-- HOME PAGE -->
+    <div id="home-page" class="page">
+      <h1 class="page-title">LangChain & LangGraph Fundamentals</h1>
+      <p class="page-desc">Production-grade patterns for building AI applications with LLM orchestration, multi-agent systems, and stateful workflows.</p>
 
-  <div class="sidebar-section-label">RAG Strategies</div>
-  <button class="toc-link" id="toc-naive" onclick="showNaiveRAG()">
-    <span class="toc-dot"></span> Naive RAG
-  </button>
-  <button class="toc-link" id="toc-hybrid" onclick="showHybridRAG()">
-    <span class="toc-dot"></span> Hybrid RAG
-  </button>
-  <button class="toc-link" id="toc-advanced" onclick="showAdvancedRAG()">
-    <span class="toc-dot"></span> Advanced RAG
-  </button>
-  <button class="toc-link" id="toc-graph" onclick="showGraphRAG()">
-    <span class="toc-dot"></span> Graph RAG
-  </button>
-  <button class="toc-link" id="toc-agentic" onclick="showAgenticRAG()">
-    <span class="toc-dot"></span> Agentic RAG
-  </button>
-  <button class="toc-link" id="toc-summary" onclick="showSummary()">
-    <span class="toc-dot"></span> Summary
-  </button>
-  <button class="toc-link" id="toc-eval" onclick="showEval()">
-    <span class="toc-dot"></span> RAG Evaluation
-  </button>
+      <div style="margin-top: 32px;">
+        <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 16px;">What is LangChain?</h2>
+        <p style="color: var(--muted); line-height: 1.7; margin-bottom: 24px;">LangChain is a framework for developing applications powered by large language models (LLMs). It provides abstractions for composable building blocks — prompt templates, chains, memory, tools, and agents — that simplify the development of complex AI systems. Rather than directly calling an LLM API, LangChain enables you to structure and combine these components into production workflows.</p>
 
-  <div class="sidebar-section-label">Production Safety</div>
-  <button class="toc-link" id="toc-governance" onclick="showGovernance()">
-    <span class="toc-dot"></span> Governance
-  </button>
+        <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 16px;">Core Concepts</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 32px;">
+          <div style="background: var(--surface); border: 1px solid var(--border); padding: 16px; border-radius: 6px;">
+            <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 8px; color: var(--blue);">Chains</h3>
+            <p style="font-size: 13px; color: var(--muted); line-height: 1.6;">Sequences of LLM calls with intermediate outputs. Enable multi-step reasoning and complex workflows by piping results from one call into the next.</p>
+          </div>
+          <div style="background: var(--surface); border: 1px solid var(--border); padding: 16px; border-radius: 6px;">
+            <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 8px; color: var(--blue);">Memory</h3>
+            <p style="font-size: 13px; color: var(--muted); line-height: 1.6;">Stateful conversation history. Maintains context across multiple turns, enabling the LLM to understand the full conversation history and respond coherently.</p>
+          </div>
+          <div style="background: var(--surface); border: 1px solid var(--border); padding: 16px; border-radius: 6px;">
+            <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 8px; color: var(--blue);">Tools & Agents</h3>
+            <p style="font-size: 13px; color: var(--muted); line-height: 1.6;">Enable LLMs to take actions. Agents reason about which tools to use and in what order, implementing the ReAct (Reasoning + Acting) loop for dynamic problem-solving.</p>
+          </div>
+          <div style="background: var(--surface); border: 1px solid var(--border); padding: 16px; border-radius: 6px;">
+            <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 8px; color: var(--blue);">Output Parsing</h3>
+            <p style="font-size: 13px; color: var(--muted); line-height: 1.6;">Structures unstructured LLM output. Enforces format constraints and extracts data into JSON, dataclasses, or other typed formats for reliable downstream processing.</p>
+          </div>
+        </div>
 
-  <div class="sidebar-section-label">Frameworks</div>
-  <div style="padding:8px 16px 4px;display:flex;align-items:center;gap:8px">
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-    <span style="font-size:11px;font-weight:700;color:#f59e0b;letter-spacing:.05em;text-transform:uppercase">Under Construction</span>
+        <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 16px;">LangGraph: Stateful Workflows</h2>
+        <p style="color: var(--muted); line-height: 1.7; margin-bottom: 16px;">LangGraph extends LangChain with explicit state management and graph-based control flow. It enables you to define complex workflows as directed graphs where nodes represent computational steps and edges represent transitions. Key benefits:</p>
+        <ul style="color: var(--muted); margin-left: 24px; margin-bottom: 24px; line-height: 1.8;">
+          <li><strong style="color: var(--text);">Explicit State:</strong> All state transitions are visible and debuggable. State flows through the graph, and each node receives the current state as input.</li>
+          <li><strong style="color: var(--text);">Conditional Edges:</strong> Routes decisions dynamically based on the current state, enabling branching logic like "if validation fails, reroute to correction step".</li>
+          <li><strong style="color: var(--text);">Cycles & Loops:</strong> Support iterative refinement. A node can loop back to itself or route to an earlier step, enabling multi-turn reasoning and progressive improvement.</li>
+          <li><strong style="color: var(--text);">Human-in-the-Loop:</strong> Pause execution and wait for human input at any step, then resume with the approved state. Critical for high-stakes applications.</li>
+        </ul>
+
+        <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 16px;">Interview Prep: Key Questions</h2>
+        <div style="background: var(--surface); border: 1px solid var(--border); padding: 20px; border-radius: 6px; margin-bottom: 24px;">
+          <p style="color: var(--text); margin-bottom: 12px;"><strong>Q: When would you use LangChain vs. calling the Anthropic API directly?</strong></p>
+          <p style="color: var(--muted); font-size: 13px; line-height: 1.6;">A: Use LangChain when building complex multi-step workflows. LangChain handles composition, memory management, and tool orchestration. Use the API directly for simple single-turn interactions where these abstractions add overhead.</p>
+        </div>
+
+        <div style="background: var(--surface); border: 1px solid var(--border); padding: 20px; border-radius: 6px; margin-bottom: 24px;">
+          <p style="color: var(--text); margin-bottom: 12px;"><strong>Q: What is the ReAct pattern and why is it important?</strong></p>
+          <p style="color: var(--muted); font-size: 13px; line-height: 1.6;">A: ReAct (Reasoning + Acting) is an agent loop where the LLM reasons about the next step, takes an action (calls a tool), observes the result, and repeats. It breaks complex problems into smaller steps, making reasoning transparent and enabling dynamic adaptation.</p>
+        </div>
+
+        <div style="background: var(--surface); border: 1px solid var(--border); padding: 20px; border-radius: 6px;">
+          <p style="color: var(--text); margin-bottom: 12px;"><strong>Q: How does LangGraph differ from LangChain chains?</strong></p>
+          <p style="color: var(--muted); font-size: 13px; line-height: 1.6;">A: Chains execute a fixed sequence of steps. LangGraph enables dynamic routing based on state, cycles for iteration, and explicit human pauses. Use chains for linear workflows; use LangGraph when you need branching, loops, or complex state management.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- DEMO PAGE -->
+    <div id="demo-page" class="page" style="display: none;">
+      <h1 id="demo-title" class="page-title"></h1>
+      <p id="demo-desc" class="page-desc"></p>
+
+      <div class="demo-form">
+        <div class="form-group">
+          <label id="input-label"></label>
+          <textarea id="input-field" placeholder="Enter input..."></textarea>
+          <button id="submit-btn" onclick="submitDemo()">Run Demo</button>
+        </div>
+        <div>
+          <label style="font-weight: 600; font-size: 14px; display: block; margin-bottom: 10px;">Output</label>
+          <div id="output" class="output"></div>
+        </div>
+      </div>
+    </div>
   </div>
-  <div class="toc-coming">LangChain Orchestration</div>
-
-</aside>
-
-<div class="page-content">
-  <div id="content" style="flex:1;overflow:hidden;display:flex;flex-direction:column;width:100%;min-width:0"></div>
 </div>
 
-</div><!-- end app-body -->
+<script>
+const demoContent = {
+  prompt: {
+    title: "Prompt Templates & Output Parsing",
+    desc: "Use PromptTemplate and StrOutputParser for reusable, composable prompts.",
+    endpoint: "/langchain/prompt",
+    inputField: "text",
+    inputLabel: "Enter text to analyze:",
+    placeholder: "e.g., The capital of France is Paris"
+  },
+  chaining: {
+    title: "Sequential Chaining",
+    desc: "Chain multiple LLM calls: translate → summarise → convert to JSON",
+    endpoint: "/langchain/chaining",
+    inputField: "text",
+    inputLabel: "Enter text to process:",
+    placeholder: "e.g., The quick brown fox jumps over the lazy dog"
+  },
+  rag: {
+    title: "Retrieval-Augmented Generation",
+    desc: "Query a fixed 7-doc FAISS vectorstore and generate grounded answers",
+    endpoint: "/langchain/rag",
+    inputField: "query",
+    inputLabel: "Ask a question about AI/ML:",
+    placeholder: "e.g., What is machine learning?"
+  },
+  memory: {
+    title: "Conversation Memory",
+    desc: "Per-session chat history with MessagesPlaceholder",
+    endpoint: "/langchain/memory",
+    inputField: "message",
+    inputLabel: "Send a message:",
+    placeholder: "e.g., Hello! What's 2+2?",
+    sessionId: true
+  },
+  tools: {
+    title: "Tool Calling",
+    desc: "Bind calculator, weather, and word-count tools to the model",
+    endpoint: "/langchain/tools",
+    inputField: "query",
+    inputLabel: "Ask the agent to use tools:",
+    placeholder: "e.g., What's the word count of 'hello world'?"
+  },
+  documents: {
+    title: "Text Splitting Strategies",
+    desc: "Compare CharacterTextSplitter vs RecursiveCharacterTextSplitter",
+    endpoint: "/langchain/documents",
+    inputField: "text",
+    inputLabel: "Enter text to split:",
+    placeholder: "e.g., Paragraph 1...\n\nParagraph 2..."
+  },
+  parsers: {
+    title: "Output Parsing",
+    desc: "Extract structured data: JSON, CSV, comma-separated lists",
+    endpoint: "/langchain/parsers",
+    inputField: "text",
+    inputLabel: "Parse output as JSON:",
+    placeholder: "e.g., A JSON object with name, age, and city"
+  },
+  agent: {
+    title: "ReAct Agents",
+    desc: "Agentic reasoning loop with iterative tool use via LangGraph",
+    endpoint: "/langchain/agent",
+    inputField: "query",
+    inputLabel: "Give the agent a task:",
+    placeholder: "e.g., Calculate the sum of 15 + 27"
+  },
+  multiagent: {
+    title: "Multi-Agent Collaboration",
+    desc: "Researcher → Blog Writer: sequential agent handoff",
+    endpoint: "/langchain/multiagent",
+    inputField: "topic",
+    inputLabel: "Enter a topic to research:",
+    placeholder: "e.g., The history of artificial intelligence"
+  },
+  langgraph: {
+    title: "LangGraph Workflows",
+    desc: "StateGraph with manager → research → writer → reviewer + revisions",
+    endpoint: "/langchain/langgraph",
+    inputField: "topic",
+    inputLabel: "Enter a topic for blog generation:",
+    placeholder: "e.g., Machine learning best practices"
+  }
+};
 
-<!-- ══ CODE MODAL ══════════════════════════════════════════════════════════ -->
-<div id="lc-code-modal" onclick="if(event.target===this)hideLCCode()"
-  style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9000;align-items:center;justify-content:center;padding:24px">
-  <div style="background:#1e293b;border:1px solid #334155;border-radius:12px;width:min(780px,95vw);max-height:85vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.6)">
+let currentDemo = null;
 
-    <!-- header -->
-    <div style="display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--border);flex-shrink:0;background:#162033">
-      <svg id="lc-code-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-      <span id="lc-code-modal-title" style="font-weight:700;font-size:14px;color:var(--text)"></span>
-      <span id="lc-code-variant-badge" style="font-size:10px;font-weight:700;padding:2px 9px;border-radius:999px;flex:1"></span>
-      <button id="lc-copy-btn" onclick="lcCopyCode()"
-        style="background:#1e293b;border:1px solid var(--border);border-radius:6px;color:var(--muted);font:12px inherit;padding:4px 12px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:6px"
-        onmouseover="this.style.borderColor='#a855f7';this.style.color='#a855f7'"
-        onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-        Copy
-      </button>
-      <button onclick="hideLCCode()"
-        style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);font:13px inherit;padding:4px 10px;cursor:pointer;transition:all .15s;line-height:1"
-        onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'"
-        onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">✕</button>
-    </div>
+function updateActiveMenu(demoKey) {
+  document.querySelectorAll('.menu-item').forEach(btn => btn.classList.remove('active'));
+  if (demoKey === 'home') {
+    document.querySelector('.menu-item').classList.add('active');
+  } else {
+    document.querySelector(`[onclick="showDemo('${demoKey}')"]`).classList.add('active');
+  }
+}
 
-    <!-- file label -->
-    <div style="padding:8px 20px;background:#0f1e35;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;gap:8px">
-      <span id="lc-code-dot" style="display:inline-block;width:10px;height:10px;background:#3b82f6;border-radius:50%;flex-shrink:0"></span>
-      <span id="lc-code-filename" style="font-size:11px;color:var(--muted);font-family:monospace"></span>
-    </div>
+function showHome() {
+  document.getElementById('home-page').style.display = 'block';
+  document.getElementById('demo-page').style.display = 'none';
+  updateActiveMenu('home');
+}
 
-    <!-- code body -->
-    <div style="overflow-y:auto;flex:1">
-      <pre id="lc-code-content"
-        style="margin:0;padding:20px;font:13px/1.75 'Cascadia Code','Consolas','Courier New',monospace;color:#e2e8f0;white-space:pre;overflow-x:auto;min-height:100%"></pre>
-    </div>
+function showDemo(demoKey) {
+  currentDemo = demoKey;
+  const demo = demoContent[demoKey];
 
-  </div>
-</div>
+  document.getElementById('demo-title').textContent = demo.title;
+  document.getElementById('demo-desc').textContent = demo.desc;
+  document.getElementById('input-label').textContent = demo.inputLabel;
+  document.getElementById('input-field').placeholder = demo.placeholder;
+  document.getElementById('output').textContent = '';
+  document.getElementById('output').classList.remove('visible');
 
-<script src="/pages/app.js" defer></script>
+  document.getElementById('home-page').style.display = 'none';
+  document.getElementById('demo-page').style.display = 'block';
+  updateActiveMenu(demoKey);
+}
+
+function generateSessionId() {
+  return 'session_' + Math.random().toString(36).substr(2, 9);
+}
+
+async function submitDemo() {
+  const demo = demoContent[currentDemo];
+  const input = document.getElementById('input-field').value.trim();
+  const output = document.getElementById('output');
+  const btn = document.getElementById('submit-btn');
+
+  if (!input) {
+    output.textContent = 'Please enter some input.';
+    output.classList.add('visible');
+    return;
+  }
+
+  btn.disabled = true;
+  output.textContent = 'Loading...';
+  output.classList.add('visible');
+
+  try {
+    const payload = {};
+    payload[demo.inputField] = input;
+
+    if (demo.sessionId) {
+      payload['session_id'] = generateSessionId();
+    }
+
+    const response = await fetch(demo.endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      output.textContent = JSON.stringify(data, null, 2);
+    } else {
+      output.textContent = `Error: ${data.detail || 'Request failed'}`;
+    }
+  } catch (err) {
+    output.textContent = `Error: ${err.message}`;
+  } finally {
+    btn.disabled = false;
+  }
+}
+</script>
+
 </body>
 </html>
