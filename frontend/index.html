@@ -38,6 +38,7 @@
   .form-group button:hover { opacity: 0.9; }
   .form-group button:disabled { opacity: 0.6; cursor: not-allowed; }
 
+
   .output { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 16px; min-height: 200px; font-size: 13px; font-family: 'Monaco', 'Menlo', 'Courier New', monospace; white-space: pre-wrap; word-break: break-word; overflow-y: auto; color: var(--text); display: none; }
   .output.visible { display: block; }
 
@@ -179,9 +180,8 @@
           <textarea id="input-field" placeholder="Enter input..." autofocus></textarea>
           <button id="submit-btn" onclick="submitDemo()">Run Demo</button>
         </div>
-        <div>
+        <div class="form-group">
           <label style="font-weight: 600; font-size: 14px; display: block; margin-bottom: 10px;">Output</label>
-          <div class="output-controls" id="output-controls" style="display: none;"></div>
           <div id="output" class="output"></div>
         </div>
       </div>
@@ -222,7 +222,7 @@ const demoContent = {
     title: "Retrieval-Augmented Generation",
     desc: "Query a fixed 7-doc FAISS vectorstore and generate grounded answers",
     endpoint: "/langchain/rag",
-    inputField: "query",
+    inputField: "question",
     inputLabel: "Ask a question about AI/ML:",
     placeholder: "e.g., What is machine learning?"
   },
@@ -327,7 +327,6 @@ function showDemo(demoKey) {
   document.getElementById('input-field').value = '';
   document.getElementById('output').textContent = '';
   document.getElementById('output').className = 'output';
-  document.getElementById('output-controls').style.display = 'none';
 
   // Show session ID for memory demo
   const sessionContainer = document.getElementById('session-display-container');
@@ -345,26 +344,8 @@ function showDemo(demoKey) {
   document.getElementById('input-field').focus();
 }
 
-function copyToClipboard() {
-  const output = document.getElementById('output');
-  const text = output.textContent;
-  navigator.clipboard.writeText(text).then(() => {
-    const btn = document.getElementById('copy-btn');
-    const originalText = btn.textContent;
-    btn.textContent = '✓ Copied';
-    btn.classList.add('copied');
-    setTimeout(() => {
-      btn.textContent = originalText;
-      btn.classList.remove('copied');
-    }, 2000);
-  }).catch(() => {
-    alert('Failed to copy to clipboard');
-  });
-}
-
 function showOutput(data, isError = false) {
   const output = document.getElementById('output');
-  const controls = document.getElementById('output-controls');
 
   if (isError) {
     output.className = 'output visible error-box';
@@ -373,9 +354,6 @@ function showOutput(data, isError = false) {
     output.className = 'output visible';
     output.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
   }
-
-  controls.innerHTML = '<button id="copy-btn" class="copy-btn" onclick="copyToClipboard()">📋 Copy</button>';
-  controls.style.display = 'flex';
 }
 
 async function submitDemo() {
@@ -394,7 +372,6 @@ async function submitDemo() {
   const output = document.getElementById('output');
   output.className = 'output visible';
   output.innerHTML = '<div class="loading-state"><div class="spinner"></div> Running demo...</div>';
-  document.getElementById('output-controls').style.display = 'none';
 
   try {
     const payload = {};
