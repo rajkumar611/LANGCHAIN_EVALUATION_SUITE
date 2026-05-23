@@ -178,6 +178,7 @@
         <div class="form-group">
           <label id="input-label"></label>
           <textarea id="input-field" placeholder="Enter input..." autofocus></textarea>
+          <div id="secondary-input-container" style="display: none; margin-top: 12px;"></div>
           <button id="submit-btn" onclick="submitDemo()">Run Demo</button>
         </div>
         <div class="form-group">
@@ -208,7 +209,8 @@ const demoContent = {
     endpoint: "/langchain/prompt",
     inputField: "text",
     inputLabel: "Enter text to analyze:",
-    placeholder: "e.g., The capital of France is Paris"
+    placeholder: "e.g., The capital of France is Paris",
+    secondaryField: { name: "role", label: "Agent role (optional):", defaultValue: "helpful assistant" }
   },
   chaining: {
     title: "Sequential Chaining",
@@ -239,7 +241,7 @@ const demoContent = {
     title: "Tool Calling",
     desc: "Bind calculator, weather, and word-count tools to the model",
     endpoint: "/langchain/tools",
-    inputField: "query",
+    inputField: "question",
     inputLabel: "Ask the agent to use tools:",
     placeholder: "e.g., What's the word count of 'hello world'?"
   },
@@ -255,15 +257,15 @@ const demoContent = {
     title: "Output Parsing",
     desc: "Extract structured data: JSON, CSV, comma-separated lists",
     endpoint: "/langchain/parsers",
-    inputField: "text",
-    inputLabel: "Parse output as JSON:",
-    placeholder: "e.g., A JSON object with name, age, and city"
+    inputField: "topic",
+    inputLabel: "Enter a topic to parse:",
+    placeholder: "e.g., Top 3 programming languages"
   },
   agent: {
     title: "ReAct Agents",
     desc: "Agentic reasoning loop with iterative tool use via LangGraph",
     endpoint: "/langchain/agent",
-    inputField: "query",
+    inputField: "question",
     inputLabel: "Give the agent a task:",
     placeholder: "e.g., Calculate the sum of 15 + 27"
   },
@@ -328,6 +330,18 @@ function showDemo(demoKey) {
   document.getElementById('output').textContent = '';
   document.getElementById('output').className = 'output';
 
+  // Handle secondary input field (e.g., role for prompt)
+  const secondaryContainer = document.getElementById('secondary-input-container');
+  if (demo.secondaryField) {
+    secondaryContainer.innerHTML = `
+      <label for="secondary-input">${demo.secondaryField.label}</label>
+      <input id="secondary-input" type="text" placeholder="${demo.secondaryField.defaultValue}" style="padding: 8px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg); color: var(--text);">
+    `;
+    secondaryContainer.style.display = 'block';
+  } else {
+    secondaryContainer.style.display = 'none';
+  }
+
   // Show session ID for memory demo
   const sessionContainer = document.getElementById('session-display-container');
   if (demo.sessionId) {
@@ -344,12 +358,31 @@ function showDemo(demoKey) {
   document.getElementById('input-field').focus();
 }
 
+function formatErrorMessage(errorMsg) {
+  // Handle Pydantic validation errors (array of error objects)
+  if (Array.isArray(errorMsg)) {
+    return errorMsg
+      .map(err => {
+        const field = Array.isArray(err.loc) ? err.loc[err.loc.length - 1] : 'field';
+        return `${field}: ${err.msg}`;
+      })
+      .join('\n');
+  }
+  // Handle plain strings
+  if (typeof errorMsg === 'string') {
+    return errorMsg;
+  }
+  // Handle objects (unlikely but safe fallback)
+  return JSON.stringify(errorMsg);
+}
+
 function showOutput(data, isError = false) {
   const output = document.getElementById('output');
 
   if (isError) {
     output.className = 'output visible error-box';
-    output.innerHTML = `<span class="error-icon">✕</span>${data}`;
+    const formattedError = formatErrorMessage(data);
+    output.innerHTML = `<span class="error-icon">✕</span>${formattedError}`;
   } else {
     output.className = 'output visible';
     output.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
@@ -377,6 +410,12 @@ async function submitDemo() {
     const payload = {};
     payload[demo.inputField] = input;
 
+    // Handle optional secondary field (e.g., role for prompt)
+    if (demo.secondaryField) {
+      const secondaryInput = document.getElementById('secondary-input')?.value.trim();
+      payload[demo.secondaryField.name] = secondaryInput || demo.secondaryField.defaultValue;
+    }
+
     if (demo.sessionId) {
       payload['session_id'] = getOrCreateSessionId(currentDemo);
     }
@@ -394,7 +433,10 @@ async function submitDemo() {
       showOutput(data);
     } else {
       const errorMsg = data.detail || data.error || 'Request failed';
-      showOutput(`${response.status}: ${errorMsg}`, true);
+      const fullError = Array.isArray(errorMsg)
+        ? errorMsg  // Pydantic validation errors (pass array directly)
+        : `${response.status}: ${errorMsg}`;  // Other errors (prepend status code)
+      showOutput(fullError, true);
     }
   } catch (err) {
     const errorMsg = err.name === 'TypeError' ? 'Network error. Is the server running?' : err.message;
