@@ -1,4 +1,4 @@
-# 8. Agents (ReAct Pattern)
+# 9. Agents (ReAct Pattern)
 
 ## What we're doing here
 

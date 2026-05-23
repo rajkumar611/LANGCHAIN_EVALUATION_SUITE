@@ -1,4 +1,4 @@
-"""Tests for Use Case 8: ReAct Agent."""
+"""Tests for Use Case 9: ReAct Agent."""
 
 import pytest
 

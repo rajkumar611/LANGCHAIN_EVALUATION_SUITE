@@ -16,9 +16,9 @@ module_names = [
     "05_tools",
     "06_documents",
     "07_parsers",
-    "08_agent",
-    "09_multiagent",
-    "10_langgraph",
+    "08_chain_pipeline",
+    "09_agent",
+    "10_workflow",
 ]
 
 for module_name in module_names:

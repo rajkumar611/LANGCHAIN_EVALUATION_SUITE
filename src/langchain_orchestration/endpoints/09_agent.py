@@ -1,4 +1,4 @@
-"""Use Case 8: ReAct Agent with Tool Integration."""
+"""Use Case 9: ReAct Agent with Tool Integration."""
 
 import logging
 

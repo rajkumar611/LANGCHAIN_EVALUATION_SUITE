@@ -22,8 +22,8 @@ class BlogState(TypedDict):
     revisions: int
 
 
-@router.post("/langchain/langgraph")
-def lc_langgraph(req: TopicRequest):
+@router.post("/langchain/workflow")
+def lc_workflow(req: TopicRequest):
     """Demonstrate a LangGraph StateGraph with manager → research → writer → reviewer loop.
 
     Builds a directed graph with a conditional edge: the reviewer either approves

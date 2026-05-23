@@ -1,4 +1,4 @@
-# 10. LangGraph (Advanced State Machines)
+# 10. Workflows (Advanced State Machines)
 
 ## What we're doing here
 

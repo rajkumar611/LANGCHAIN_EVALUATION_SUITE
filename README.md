@@ -31,9 +31,9 @@ This suite showcases production-ready LangChain patterns with:
 | `POST /langchain/tools` | `bind_tools` with calculator / weather / word-count | Tool calling, structured outputs |
 | `POST /langchain/documents` | `CharacterTextSplitter` vs `RecursiveCharacterTextSplitter` | Text chunking strategies |
 | `POST /langchain/parsers` | `StrOutputParser`, `JsonOutputParser`, `CommaSeparatedListOutputParser` | Output parsing and structuring |
+| `POST /langchain/multiagent` | Sequential chain pipeline (researcher → blog writer) | Pipeline composition, multi-step chains |
 | `POST /langchain/agent` | ReAct agent via `langgraph.prebuilt.create_react_agent` | Agentic reasoning, iterative tool use |
-| `POST /langchain/multiagent` | Two sequential LLM calls (researcher → blog writer) | Agent collaboration, handoffs |
-| `POST /langchain/langgraph` | `StateGraph` with manager → research → writer → reviewer | Graph-based workflows, conditional edges |
+| `POST /langchain/workflow` | `StateGraph` with manager → research → writer → reviewer | Graph-based workflows, conditional edges |
 
 Each endpoint is self-contained, testable, and demonstrates a specific LangChain capability.
 
@@ -80,29 +80,29 @@ src/langchain_orchestration/
 │   ├── vectorstore.py                  # Lazy FAISS singleton
 │   └── session_store.py                # Session dict + model constant
 └── endpoints/                          # 10 LangChain use cases (1 file per strategy)
-    ├── prompt.py                       # Use Case 1:  Prompt Templates
-    ├── chaining.py                     # Use Case 2:  LLM Chaining
-    ├── rag.py                          # Use Case 3:  RAG
-    ├── memory.py                       # Use Case 4:  Memory & Sessions
-    ├── tool_calling.py                 # Use Case 5:  Tools & Function Calling
-    ├── documents.py                    # Use Case 6:  Document Processing
-    ├── parsers.py                      # Use Case 7:  Output Parsers
-    ├── agent.py                        # Use Case 8:  ReAct Agent
-    ├── multiagent.py                   # Use Case 9:  Multi-Agent
-    └── langgraph_flow.py               # Use Case 10: LangGraph Workflow
+    ├── 01_prompt.py                    # Use Case 1:  Prompt Templates
+    ├── 02_chaining.py                  # Use Case 2:  LLM Chaining
+    ├── 03_rag.py                       # Use Case 3:  RAG
+    ├── 04_memory.py                    # Use Case 4:  Memory & Sessions
+    ├── 05_tools.py                     # Use Case 5:  Tools & Function Calling
+    ├── 06_documents.py                 # Use Case 6:  Document Processing
+    ├── 07_parsers.py                   # Use Case 7:  Output Parsers
+    ├── 08_chain_pipeline.py            # Use Case 8:  Sequential Chain Pipeline
+    ├── 09_agent.py                     # Use Case 9:  ReAct Agent
+    └── 10_workflow.py                  # Use Case 10: LangGraph Workflow
 
 tests/
 ├── conftest.py                         # TestClient fixture + environment setup
-├── test_prompt.py                      # 5 tests (validation + integration)
-├── test_chaining.py                    # 3 tests
-├── test_rag.py                         # 2 tests
-├── test_memory.py                      # 6 tests (validation + session management)
-├── test_tool_calling.py                # 3 tests
-├── test_documents.py                   # 5 tests (text splitting logic)
-├── test_parsers.py                     # 3 tests
-├── test_agent.py                       # 3 tests
-├── test_multiagent.py                  # 3 tests
-├── test_langgraph.py                   # 3 tests
+├── test_01_prompt.py                   # 5 tests (validation + integration)
+├── test_02_chaining.py                 # 3 tests
+├── test_03_rag.py                      # 2 tests
+├── test_04_memory.py                   # 6 tests (validation + session management)
+├── test_05_tools.py                    # 3 tests
+├── test_06_documents.py                # 5 tests (text splitting logic)
+├── test_07_parsers.py                  # 3 tests
+├── test_08_chain_pipeline.py           # 3 tests
+├── test_09_agent.py                    # 3 tests
+├── test_10_workflow.py                 # 3 tests
 └── test_shared_tools.py                # 10 unit tests (_safe_eval_math)
                                         # Total: 44 tests ✓ ALL PASSING
 ```
@@ -150,9 +150,9 @@ pytest tests/ --cov=src --cov-report=html
 | `POST` | `/langchain/tools` | Tool calling demo |
 | `POST` | `/langchain/documents` | Text splitting strategies |
 | `POST` | `/langchain/parsers` | Output parsing demo |
+| `POST` | `/langchain/multiagent` | Sequential chain pipeline demo |
 | `POST` | `/langchain/agent` | ReAct agent demo |
-| `POST` | `/langchain/multiagent` | Multiagent collaboration demo |
-| `POST` | `/langchain/langgraph` | LangGraph workflow demo |
+| `POST` | `/langchain/workflow` | LangGraph workflow demo |
 | `DELETE` | `/langchain/memory/{session_id}` | Clear session history |
 
 Full interactive docs: `http://localhost:8081/docs`

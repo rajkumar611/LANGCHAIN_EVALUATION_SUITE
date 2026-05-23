@@ -91,16 +91,16 @@ One place to register all 10 endpoints; adding a new use case requires only:
 ```
 tests/
 ├── conftest.py                 # TestClient fixture; sets dummy ANTHROPIC_API_KEY
-├── test_prompt.py              ↔ src/endpoints/prompt.py
-├── test_chaining.py            ↔ src/endpoints/chaining.py
-├── test_rag.py                 ↔ src/endpoints/rag.py
-├── test_memory.py              ↔ src/endpoints/memory.py
-├── test_tool_calling.py        ↔ src/endpoints/tool_calling.py
-├── test_documents.py           ↔ src/endpoints/documents.py
-├── test_parsers.py             ↔ src/endpoints/parsers.py
-├── test_agent.py               ↔ src/endpoints/agent.py
-├── test_multiagent.py          ↔ src/endpoints/multiagent.py
-├── test_langgraph.py           ↔ src/endpoints/langgraph_flow.py
+├── test_01_prompt.py           ↔ src/endpoints/01_prompt.py
+├── test_02_chaining.py         ↔ src/endpoints/02_chaining.py
+├── test_03_rag.py              ↔ src/endpoints/03_rag.py
+├── test_04_memory.py           ↔ src/endpoints/04_memory.py
+├── test_05_tools.py            ↔ src/endpoints/05_tools.py
+├── test_06_documents.py        ↔ src/endpoints/06_documents.py
+├── test_07_parsers.py          ↔ src/endpoints/07_parsers.py
+├── test_08_chain_pipeline.py   ↔ src/endpoints/08_chain_pipeline.py
+├── test_09_agent.py            ↔ src/endpoints/09_agent.py
+├── test_10_workflow.py         ↔ src/endpoints/10_workflow.py
 └── test_shared_tools.py        ↔ src/shared/tools.py (_safe_eval_math)
 ```
 

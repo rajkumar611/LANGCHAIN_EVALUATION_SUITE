@@ -1,10 +1,10 @@
-"""Tests for Use Case 9: Multi-Agent Pipeline."""
+"""Tests for Use Case 8: Sequential Chain Pipeline."""
 
 import pytest
 
 
-def test_multiagent_endpoint_exists(client):
-    """Test multiagent endpoint is callable."""
+def test_chain_pipeline_endpoint_exists(client):
+    """Test chain pipeline endpoint is callable."""
     response = client.post(
         "/langchain/multiagent",
         json={"topic": "Climate Change"},
@@ -12,8 +12,8 @@ def test_multiagent_endpoint_exists(client):
     assert response.status_code in [200, 500]
 
 
-def test_multiagent_validation_empty_topic(client):
-    """Test multiagent endpoint rejects empty topic."""
+def test_chain_pipeline_validation_empty_topic(client):
+    """Test chain pipeline endpoint rejects empty topic."""
     response = client.post(
         "/langchain/multiagent",
         json={"topic": ""},
@@ -21,8 +21,8 @@ def test_multiagent_validation_empty_topic(client):
     assert response.status_code == 422
 
 
-def test_multiagent_validation_topic_too_long(client):
-    """Test multiagent endpoint rejects oversized topic."""
+def test_chain_pipeline_validation_topic_too_long(client):
+    """Test chain pipeline endpoint rejects oversized topic."""
     response = client.post(
         "/langchain/multiagent",
         json={"topic": "x" * 501},

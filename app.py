@@ -67,9 +67,9 @@ def get_pattern_explanation(pattern_name: str) -> dict:
         "tools": "05_tools.md",
         "documents": "06_documents.md",
         "parsers": "07_parsers.md",
-        "agent": "08_agent.md",
-        "multiagent": "09_multiagent.md",
-        "langgraph": "10_langgraph.md",
+        "multiagent": "08_chain_pipeline.md",
+        "agent": "09_agent.md",
+        "workflow": "10_workflow.md",
     }
 
     if pattern_name not in valid_patterns:

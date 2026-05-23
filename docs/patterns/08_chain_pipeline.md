@@ -1,22 +1,22 @@
-# 9. Multi-Agent Workflows
+# 8. Sequential Chain Pipeline
 
 ## What we're doing here
 
-Multi-agent workflows orchestrate multiple specialized LLM calls in sequence, where each agent has a specific role:
-1. **Researcher Agent**: Gathers information on a topic
-2. **Writer Agent**: Creates polished content based on research
+Sequential chain pipelines connect multiple LLM calls in sequence, where each step builds on the output of the previous one:
+1. **Researcher**: Gathers information on a topic
+2. **Writer**: Creates polished content based on research
 
-This pattern combines the outputs of multiple agents to create more sophisticated solutions than a single LLM could achieve.
+This pattern combines the outputs of multiple steps to create more sophisticated solutions than a single LLM call could achieve.
 
 ## Why LangChain?
 
-- **Clear Separation**: Each agent focuses on a specific task
-- **Pipeline Composition**: Easily chain agent outputs to inputs
-- **Specialization**: Can optimize prompts for each agent's role
+- **Clear Separation**: Each step focuses on a specific task
+- **Pipeline Composition**: Easily chain step outputs to inputs
+- **Specialization**: Can optimize prompts for each step's role
 - **Quality Improvement**: Multiple passes improve output quality
-- **Error Isolation**: Failures in one agent don't necessarily break others
+- **Error Isolation**: Failures in one step don't necessarily break others
 - **Monitoring**: Easy to log and inspect intermediate outputs
-- **Flexibility**: Add, remove, or reorder agents easily
+- **Flexibility**: Add, remove, or reorder steps easily
 - **Extensibility**: Natural foundation for more complex workflows (with LangGraph)
 
 ## Without LangChain - Alternatives and Cons

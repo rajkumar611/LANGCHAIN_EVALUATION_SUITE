@@ -1,4 +1,4 @@
-"""Use Case 9: Multi-Agent Pipeline - Researcher and Blog Writer."""
+"""Use Case 8: Sequential Chain Pipeline - Researcher and Blog Writer."""
 
 import logging
 

@@ -66,9 +66,9 @@ All LangChain imports are deferred (inside each route function) — keeps startu
 | `POST /langchain/tools` | `bind_tools` with calculator / weather / word-count |
 | `POST /langchain/documents` | `CharacterTextSplitter` vs `RecursiveCharacterTextSplitter` |
 | `POST /langchain/parsers` | `StrOutputParser`, `JsonOutputParser`, `CommaSeparatedListOutputParser` |
+| `POST /langchain/multiagent` | Sequential chain pipeline (researcher → blog writer) |
 | `POST /langchain/agent` | ReAct agent via `langgraph.prebuilt.create_react_agent` |
-| `POST /langchain/multiagent` | Two sequential LLM calls (researcher → blog writer) |
-| `POST /langchain/langgraph` | `StateGraph` with manager → research → writer → reviewer + conditional edge (max 2 revisions) |
+| `POST /langchain/workflow` | `StateGraph` with manager → research → writer → reviewer + conditional edge (max 2 revisions) |
 
 **Request models**: `PromptRequest`, `TextRequest`, `QuestionRequest`, `TopicRequest`, `MemoryRequest`.
 
