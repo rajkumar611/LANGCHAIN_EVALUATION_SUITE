@@ -8,9 +8,9 @@ Agents use the **ReAct** (Reasoning + Acting) pattern to solve problems iterativ
 3. **Observe**: Receive tool output
 4. **Repeat**: Continue until the goal is achieved or tool limit reached
 
-This example uses LangGraph's built-in agent that combines reasoning with tool use.
+This example uses LangGraph's built-in agent that combines reasoning with tool use. LangChain provides the LLM interface and tools; LangGraph provides the agentic orchestration.
 
-## Why LangChain?
+## Why LangGraph?
 
 - **Autonomous Decision Making**: LLM decides when and which tools to use
 - **Error Recovery**: Gracefully handles tool errors and invalid calls
@@ -22,46 +22,70 @@ This example uses LangGraph's built-in agent that combines reasoning with tool u
 - **Production Ready**: Built-in safety guards and error handling
 - **Streaming Support**: Can stream reasoning and actions in real-time
 
-## Without LangChain - Alternatives and Cons
+## Without LangGraph - Alternatives and Cons
 
-### Manual ReAct Loop
+### LangChain Only (Manual Orchestration)
 ```python
-# Without LangChain
-def agent_loop(goal, tools, max_iterations=5):
-    history = [{"role": "user", "content": goal}]
+# Using LangChain without LangGraph - manual orchestration
+from langchain_anthropic import ChatAnthropic
+from langchain_core.tools import tool
+from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
+import json
+import re
+
+@tool
+def calculator(expression: str) -> str:
+    """Evaluate a math expression."""
+    return str(eval(expression))
+
+def manual_agent_loop(question: str, max_iterations: int = 5):
+    model = ChatAnthropic(model="claude-haiku-4-5-20251001")
+    tools = [calculator]
+    
+    # Bind tools to model
+    model_with_tools = model.bind_tools(tools)
+    messages = [HumanMessage(content=question)]
     
     for i in range(max_iterations):
-        # Get LLM reasoning
-        response = llm_call(history)
+        # Get LLM response
+        response = model_with_tools.invoke(messages)
+        messages.append(response)
         
-        # Manually parse tool calls (fragile)
-        tool_name = parse_tool_name(response)
-        params = parse_params(response)
+        # Check if model wants to use tools
+        if not response.tool_calls:
+            return response.content  # Final answer
         
-        # Manually execute tool
-        if tool_name not in tools:
-            tool_result = "Tool not found"
-        else:
-            tool_result = tools[tool_name](**params)
-        
-        # Manually update history
-        history.append({"role": "assistant", "content": response})
-        history.append({"role": "user", "content": f"Tool result: {tool_result}"})
+        # Manually process each tool call
+        for tool_call in response.tool_calls:
+            tool_name = tool_call["name"]
+            tool_input = tool_call["args"]
+            
+            # Find and execute tool (fragile - no built-in routing)
+            if tool_name == "calculator":
+                result = calculator.invoke(tool_input)
+            else:
+                result = "Tool not found"
+            
+            # Add tool result to messages (manual message construction)
+            messages.append(ToolMessage(
+                content=result,
+                tool_call_id=tool_call["id"]
+            ))
     
-    return history[-1]["content"]
+    return "Max iterations reached"
 ```
 
 **Cons:**
-- Extremely complex state management
-- Fragile parsing of LLM tool calls
-- Manual error handling for each step
-- Difficult to debug multi-step reasoning
-- No built-in support for memory across conversations
-- Hard to implement proper iteration limits
-- Token management becomes complex with long histories
-- Difficult to implement stopping conditions elegantly
-- Tool validation is manual and error-prone
-- Scaling beyond simple cases requires extensive code
+- **Manual tool routing**: You must hardcode `if tool_name == "calculator"` for each tool
+- **No built-in message validation**: Messages must be constructed correctly by hand
+- **Error handling scattered**: Each tool call needs try/except; no centralized error recovery
+- **State management burden**: You track `messages`, `iteration`, `tool_calls` manually
+- **No streaming support**: Must wait for full response before processing
+- **Fragile tool parsing**: If LLM output changes format, parsing breaks
+- **No built-in stopping conditions**: Must implement your own "stop if no tools called" logic
+- **Difficult to debug**: No visibility into agent decision-making; must log messages yourself
+- **Token management**: Your responsibility to manage context window and truncate history
+- **No memory persistence**: Conversation state lives only in the loop; no session support
 
 ### External Workflow Engine
 Using a separate workflow system (Airflow, etc.) requires:
