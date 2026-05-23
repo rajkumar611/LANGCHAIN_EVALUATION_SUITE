@@ -24,7 +24,7 @@ def lc_agent_ep(req: QuestionRequest):
         from langchain_anthropic import ChatAnthropic
         from langchain_core.messages import AIMessage, ToolMessage
         from langchain_core.tools import tool
-        from langgraph.prebuilt import create_react_agent
+        from langchain.agents import create_agent
 
         calculator = make_calculator_tool()
 
@@ -50,16 +50,22 @@ def lc_agent_ep(req: QuestionRequest):
             return info.get(country.lower(), "Country info not available.")
 
         chat_model = ChatAnthropic(model=LC_MODEL, max_tokens=1024)
-        agent = create_react_agent(
+        agent = create_agent(
             chat_model,
             [calculator, get_exchange_rate, get_country_info],
-            prompt="You are a helpful assistant. Use tools when needed. Think step by step.",
+            system_prompt="You are a helpful assistant. Use tools when needed. Think step by step.",
         )
         result = agent.invoke({"messages": [{"role": "user", "content": req.question}]})
 
         steps: list[dict] = []
         pending: dict[str, dict] = {}
+        messages_summary = []
+
         for msg in result["messages"]:
+            messages_summary.append({
+                "type": type(msg).__name__,
+                "content": str(msg.content) if hasattr(msg, 'content') else str(msg)
+            })
             if isinstance(msg, AIMessage) and msg.tool_calls:
                 for tool_call in msg.tool_calls:
                     pending[tool_call["id"]] = {
@@ -71,7 +77,15 @@ def lc_agent_ep(req: QuestionRequest):
                 pending[msg.tool_call_id]["result"] = msg.content
                 steps.append(pending.pop(msg.tool_call_id))
 
-        return {"steps": steps, "answer": result["messages"][-1].content}
+        return {
+            "steps": steps,
+            "answer": result["messages"][-1].content,
+            "intermediate_result": {
+                "result_keys": list(result.keys()),
+                "messages_count": len(result.get("messages", [])),
+                "messages_summary": messages_summary
+            }
+        }
     except Exception as e:
         logger.error("lc_agent error: %s", e)
         return JSONResponse(status_code=500, content={"detail": str(e)})

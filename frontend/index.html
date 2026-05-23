@@ -179,6 +179,13 @@
           <label id="input-label"></label>
           <textarea id="input-field" placeholder="Enter input..." autofocus></textarea>
           <div id="secondary-input-container" style="display: none; margin-top: 12px;"></div>
+          <div id="test-cases-container" style="display: none; margin-top: 12px; padding: 12px; background: rgba(59, 130, 246, 0.05); border-radius: 6px; border: 1px solid rgba(59, 130, 246, 0.2);">
+            <div style="font-size: 12px; font-weight: 600; margin-bottom: 8px; color: var(--muted);">Quick Test Cases:</div>
+            <div id="test-cases-buttons" style="display: flex; flex-wrap: wrap; gap: 6px;"></div>
+          </div>
+          <div id="tip-container" style="display: none; margin-top: 12px; padding: 12px; background: rgba(34, 197, 94, 0.05); border-radius: 6px; border-left: 3px solid rgba(34, 197, 94, 0.5);">
+            <div id="tip-text" style="font-size: 13px; color: var(--muted); line-height: 1.5;"></div>
+          </div>
           <button id="submit-btn" onclick="submitDemo()">Run Demo</button>
         </div>
         <div class="form-group">
@@ -248,7 +255,12 @@ const demoContent = {
     inputField: "question",
     inputLabel: "Ask the agent to use tools:",
     placeholder: "e.g., What's the word count of 'hello world'?",
-    defaultValue: "What is the word count of 'hello world'?"
+    defaultValue: "What is the word count of 'hello world'?",
+    testCases: [
+      { label: "Simple calculation", value: "What is 25 * 8?" },
+      { label: "Weather + word count", value: "What's the word count of 'hello world' and the weather in London?" },
+      { label: "Multiple tools", value: "Count words in 'artificial intelligence is the future' and get weather for Singapore" }
+    ]
   },
   documents: {
     title: "Text Splitting Strategies",
@@ -275,7 +287,13 @@ const demoContent = {
     inputField: "question",
     inputLabel: "Give the agent a task:",
     placeholder: "e.g., Calculate the sum of 15 + 27",
-    defaultValue: "Calculate the sum of 15 + 27"
+    defaultValue: "Calculate the sum of 15 + 27",
+    testCases: [
+      { label: "Simple math", value: "Calculate the sum of 15 + 27" },
+      { label: "Multi-step iterative", value: "Calculate 50 * 3, then convert USD to SGD using exchange rate, then tell me about Singapore" },
+      { label: "Sequential reasoning", value: "What is 100 + 200, and what is the exchange rate between USD and INR? Then tell me about India." }
+    ],
+    tip: "💡 Tip: 'Sequential reasoning' shows independent queries (like Tool Calling handles). Compare with 'Multi-step iterative' to see Agent's advantage with dependent tool calls."
   },
   chain_pipeline: {
     title: "Chain Pipeline",
@@ -326,6 +344,11 @@ function showHome() {
   updateActiveMenu('home');
 }
 
+function loadTestCase(value) {
+  document.getElementById('input-field').value = value;
+  document.getElementById('input-field').focus();
+}
+
 function showDemo(demoKey) {
   currentDemo = demoKey;
   const demo = demoContent[demoKey];
@@ -349,6 +372,28 @@ function showDemo(demoKey) {
     secondaryContainer.style.display = 'block';
   } else {
     secondaryContainer.style.display = 'none';
+  }
+
+  // Handle test cases
+  const testCasesContainer = document.getElementById('test-cases-container');
+  const testCasesButtons = document.getElementById('test-cases-buttons');
+  if (demo.testCases && demo.testCases.length > 0) {
+    testCasesButtons.innerHTML = demo.testCases
+      .map(tc => `<button style="padding: 6px 10px; font-size: 12px; background: rgba(59, 130, 246, 0.2); color: var(--blue); border: 1px solid rgba(59, 130, 246, 0.5); border-radius: 4px; cursor: pointer; transition: all 0.15s;" onclick="loadTestCase('${tc.value.replace(/'/g, "\\'")}')" onmouseover="this.style.background='rgba(59, 130, 246, 0.3)'" onmouseout="this.style.background='rgba(59, 130, 246, 0.2)'">${tc.label}</button>`)
+      .join('');
+    testCasesContainer.style.display = 'block';
+  } else {
+    testCasesContainer.style.display = 'none';
+  }
+
+  // Handle tip/note
+  const tipContainer = document.getElementById('tip-container');
+  const tipText = document.getElementById('tip-text');
+  if (demo.tip) {
+    tipText.textContent = demo.tip;
+    tipContainer.style.display = 'block';
+  } else {
+    tipContainer.style.display = 'none';
   }
 
   // Show session ID for memory demo
