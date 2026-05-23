@@ -75,7 +75,8 @@ def get_pattern_explanation(pattern_name: str) -> dict:
     if pattern_name not in valid_patterns:
         raise HTTPException(status_code=404, detail="Pattern not found")
 
-    file_path = Path("docs/patterns") / valid_patterns[pattern_name]
+    # Use absolute path relative to this file, not the current working directory
+    file_path = Path(__file__).parent / "docs" / "patterns" / valid_patterns[pattern_name]
 
     if not file_path.exists():
         raise HTTPException(status_code=404, detail="Explanation file not found")
