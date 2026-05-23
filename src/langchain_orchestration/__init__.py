@@ -23,7 +23,9 @@ module_names = [
 ]
 
 for module_name in module_names:
-    module = importlib.import_module(f".endpoints.{module_name}", package="src.langchain_orchestration")
+    module = importlib.import_module(
+        f".endpoints.{module_name}", package="src.langchain_orchestration"
+    )
     router.include_router(module.router)
 
 __all__ = ["router", "LC_SESSIONS"]

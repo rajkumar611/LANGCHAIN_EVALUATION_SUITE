@@ -62,10 +62,12 @@ def lc_agent_ep(req: QuestionRequest):
         messages_summary = []
 
         for msg in result["messages"]:
-            messages_summary.append({
-                "type": type(msg).__name__,
-                "content": str(msg.content) if hasattr(msg, 'content') else str(msg)
-            })
+            messages_summary.append(
+                {
+                    "type": type(msg).__name__,
+                    "content": str(msg.content) if hasattr(msg, "content") else str(msg),
+                }
+            )
             if isinstance(msg, AIMessage) and msg.tool_calls:
                 for tool_call in msg.tool_calls:
                     pending[tool_call["id"]] = {
@@ -83,8 +85,8 @@ def lc_agent_ep(req: QuestionRequest):
             "intermediate_result": {
                 "result_keys": list(result.keys()),
                 "messages_count": len(result.get("messages", [])),
-                "messages_summary": messages_summary
-            }
+                "messages_summary": messages_summary,
+            },
         }
     except Exception as e:
         logger.error("lc_agent error: %s", e)
