@@ -10,7 +10,9 @@ LangGraph enables building complex, stateful AI workflows using a graph-based ar
 
 This example demonstrates a content creation workflow with feedback loops and conditional routing.
 
-## Why LangChain?
+## Why LangGraph?
+
+LangGraph extends LangChain with explicit state management and graph-based control flow. It transforms linear chains into stateful workflows with branching, loops, and conditional routing — perfect for complex agentic systems.
 
 - **State Management**: Explicit, typed state that all nodes access
 - **Graph Visualization**: Visualize your workflow as a graph
@@ -23,7 +25,7 @@ This example demonstrates a content creation workflow with feedback loops and co
 - **Production Ready**: Built for complex, reliable AI systems
 - **Human-in-the-Loop**: Easy to add approval steps
 
-## Without LangChain - Alternatives and Cons
+## Without LangGraph - What's the Cost?
 
 ### Manual State Management
 ```python

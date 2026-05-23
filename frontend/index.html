@@ -13,12 +13,11 @@
   .sidebar { width: 260px; background: var(--surface); border-right: 1px solid var(--border); overflow-y: auto; padding: 0; }
   .content { flex: 1; display: flex; flex-direction: column; }
 
-  header { background: var(--bg); border-bottom: 1px solid var(--border); padding: 16px 24px; display: flex; align-items: center; gap: 12px; }
-  header svg { width: 22px; height: 22px; stroke: #3b82f6; }
+  header { background: var(--bg); border-bottom: 1px solid var(--border); padding: 20px 24px; min-height: 60px; display: flex; align-items: center; }
   header span { font-size: 16px; font-weight: 700; }
 
-  .sidebar-header { padding: 20px 16px; border-bottom: 1px solid var(--border); }
-  .sidebar-header h2 { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  .sidebar-header { padding: 20px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; }
+  .sidebar-header h2 { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin: 0; }
 
   .sidebar-menu { padding: 8px 0; }
   .menu-item { display: block; width: 100%; text-align: left; background: none; border: none; padding: 10px 16px; color: var(--muted); font-size: 14px; cursor: pointer; transition: all 0.15s; }
@@ -100,12 +99,7 @@
 
   <!-- MAIN CONTENT -->
   <div class="content">
-    <header>
-      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" style="width:20px;height:20px;stroke:#3b82f6;">
-        <circle cx="12" cy="12" r="3"></circle>
-        <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"></path>
-      </svg>
-    </header>
+    <header></header>
 
     <!-- HOME PAGE -->
     <div id="home-page" class="page">
@@ -310,7 +304,13 @@ const demoContent = {
     endpoint: "/langchain/workflow",
     inputField: "topic",
     inputLabel: "Enter a topic for blog generation:",
-    placeholder: "e.g., Machine learning best practices"
+    placeholder: "e.g., Machine learning best practices",
+    defaultValue: "Machine learning best practices",
+    testCases: [
+      { label: "Best practices", value: "Machine learning best practices" },
+      { label: "Emerging tech", value: "Artificial intelligence in healthcare" },
+      { label: "Practical guide", value: "Getting started with LangChain" }
+    ]
   }
 };
 
