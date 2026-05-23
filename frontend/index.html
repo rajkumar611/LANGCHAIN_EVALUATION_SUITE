@@ -92,7 +92,7 @@
       <button class="menu-item" onclick="showDemo('tools')"><span style="font-weight:700;color:var(--blue)">05.</span> Tool Calling</button>
       <button class="menu-item" onclick="showDemo('documents')"><span style="font-weight:700;color:var(--blue)">06.</span> Text Splitting</button>
       <button class="menu-item" onclick="showDemo('parsers')"><span style="font-weight:700;color:var(--blue)">07.</span> Output Parsing</button>
-      <button class="menu-item" onclick="showDemo('multiagent')"><span style="font-weight:700;color:var(--blue)">08.</span> Chain Pipeline</button>
+      <button class="menu-item" onclick="showDemo('chain_pipeline')"><span style="font-weight:700;color:var(--blue)">08.</span> Chain Pipeline</button>
       <button class="menu-item" onclick="showDemo('agent')"><span style="font-weight:700;color:var(--blue)">09.</span> Agents</button>
       <button class="menu-item" onclick="showDemo('workflow')"><span style="font-weight:700;color:var(--blue)">10.</span> Workflows</button>
     </div>
@@ -276,10 +276,10 @@ const demoContent = {
     inputLabel: "Give the agent a task:",
     placeholder: "e.g., Calculate the sum of 15 + 27"
   },
-  multiagent: {
-    title: "Multi-Agent Collaboration",
-    desc: "Researcher → Blog Writer: sequential agent handoff",
-    endpoint: "/langchain/multiagent",
+  chain_pipeline: {
+    title: "Chain Pipeline",
+    desc: "Researcher → Blog Writer: sequential LLM calls with different system prompts",
+    endpoint: "/langchain/chain-pipeline",
     inputField: "topic",
     inputLabel: "Enter a topic to research:",
     placeholder: "e.g., The history of artificial intelligence"

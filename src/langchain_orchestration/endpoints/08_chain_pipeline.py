@@ -12,12 +12,12 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-@router.post("/langchain/multiagent")
-def lc_multiagent(req: TopicRequest):
-    """Demonstrate a simple two-agent pipeline: researcher → blog writer.
+@router.post("/langchain/chain-pipeline")
+def lc_chain_pipeline(req: TopicRequest):
+    """Demonstrate a sequential chain pipeline: researcher → blog writer.
 
     Two sequential LLM calls with different system prompts simulate specialized
-    agents handing off work. The researcher produces facts; the writer crafts prose.
+    roles handing off work. The researcher produces facts; the writer crafts prose.
     """
     try:
         from langchain_anthropic import ChatAnthropic
@@ -45,5 +45,5 @@ def lc_multiagent(req: TopicRequest):
 
         return {"research": research, "blog": blog}
     except Exception as e:
-        logger.error("lc_multiagent error: %s", e)
+        logger.error("lc_chain_pipeline error: %s", e)
         return JSONResponse(status_code=500, content={"detail": str(e)})

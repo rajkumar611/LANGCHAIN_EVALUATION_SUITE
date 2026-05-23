@@ -31,7 +31,7 @@ This suite showcases production-ready LangChain patterns with:
 | `POST /langchain/tools` | `bind_tools` with calculator / weather / word-count | Tool calling, structured outputs |
 | `POST /langchain/documents` | `CharacterTextSplitter` vs `RecursiveCharacterTextSplitter` | Text chunking strategies |
 | `POST /langchain/parsers` | `StrOutputParser`, `JsonOutputParser`, `CommaSeparatedListOutputParser` | Output parsing and structuring |
-| `POST /langchain/multiagent` | Sequential chain pipeline (researcher → blog writer) | Pipeline composition, multi-step chains |
+| `POST /langchain/chain-pipeline` | Sequential chain pipeline (researcher → blog writer) | Pipeline composition, multi-step chains |
 | `POST /langchain/agent` | ReAct agent via `langgraph.prebuilt.create_react_agent` | Agentic reasoning, iterative tool use |
 | `POST /langchain/workflow` | `StateGraph` with manager → research → writer → reviewer | Graph-based workflows, conditional edges |
 
@@ -150,7 +150,7 @@ pytest tests/ --cov=src --cov-report=html
 | `POST` | `/langchain/tools` | Tool calling demo |
 | `POST` | `/langchain/documents` | Text splitting strategies |
 | `POST` | `/langchain/parsers` | Output parsing demo |
-| `POST` | `/langchain/multiagent` | Sequential chain pipeline demo |
+| `POST` | `/langchain/chain-pipeline` | Sequential chain pipeline demo |
 | `POST` | `/langchain/agent` | ReAct agent demo |
 | `POST` | `/langchain/workflow` | LangGraph workflow demo |
 | `DELETE` | `/langchain/memory/{session_id}` | Clear session history |
