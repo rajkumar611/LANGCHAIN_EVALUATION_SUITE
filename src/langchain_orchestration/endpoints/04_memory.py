@@ -53,10 +53,3 @@ def lc_memory(req: MemoryRequest):
     except Exception as e:
         logger.error("lc_memory error: %s", e)
         return JSONResponse(status_code=500, content={"detail": str(e)})
-
-
-@router.delete("/langchain/memory/{session_id}")
-def lc_memory_clear(session_id: str):
-    """Clear all conversation history for a given session."""
-    LC_SESSIONS.pop(session_id, None)
-    return {"cleared": True}

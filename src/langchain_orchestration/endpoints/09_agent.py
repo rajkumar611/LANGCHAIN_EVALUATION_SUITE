@@ -21,10 +21,10 @@ def lc_agent_ep(req: QuestionRequest):
     It reasons step-by-step, deciding which tools to call before answering.
     """
     try:
+        from langchain.agents import create_agent
         from langchain_anthropic import ChatAnthropic
         from langchain_core.messages import AIMessage, ToolMessage
         from langchain_core.tools import tool
-        from langchain.agents import create_agent
 
         calculator = make_calculator_tool()
 
